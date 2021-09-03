@@ -102,25 +102,24 @@ inc %>%
 Create a graph that shows the distribution of companies in the dataset by State (ie how many are in each state). There are a lot of States, so consider which axis you should use. This visualization is ultimately going to be consumed on a 'portrait' oriented screen (ie taller than wide), which should further guide your layout choices.
 
 
-The solution below uses the `forcats` and `ggplot2` libraries. More information about `forcats` is here [https://forcats.tidyverse.org/](https://forcats.tidyverse.org/)
+The solution below uses the `forcats` and `ggplot2` libraries. More information about `forcats` is here [https://forcats.tidyverse.org/](https://forcats.tidyverse.org/). I decided to go with a bar graph where the counts are organized by state in ascending order and the Tufte theme. I had a difficult time adjusting the labels and hope to remedy this in the future.
 
 ```{r warning=FALSE, message=FALSE}
 
 # Answer Question 1 here
 
+# For information about bar widths
+# https://r-graphics.org/recipe-bar-graph-adjust-width
 library(forcats)
 library(ggplot2)
+library(ggthemes)
 ggplot(inc, aes(x=fct_infreq(State))) + 
-    geom_bar(stat="count", fill = "steelblue",  width = 0.5, position = position_dodge(width=0.3)) +
+    geom_bar(stat="count", width = 0.7) +
     coord_flip() +
-    geom_text(aes(label=..count..), stat="count", size=3, 
-              hjust=-0.2, color="black") +
     xlab("State") +
     ylab("Count") +
-    theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-    ggtitle("The 5,000 Fastest Growing Companies in US") + 
-    theme(panel.background = element_blank())
-
+    theme_tufte() +
+    ggtitle("The 5,000 Fastest Growing Companies in US") 
 
 ```
 
