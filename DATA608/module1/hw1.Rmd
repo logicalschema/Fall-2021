@@ -149,10 +149,10 @@ medianNY <- median(nyData$Employees)
 
 # https://ggplot2.tidyverse.org/reference/geom_boxplot.html
 ggplot(nyData, aes(reorder(Industry, Employees, FUN = median), Employees)) + 
-  geom_boxplot(outlier.color = "grey", outlier.fill = "grey", outlier.size = 1) +
+  geom_boxplot(outlier.colour = "red", outlier.shape = 1) +
   coord_flip() +
-  geom_hline(yintercept = median(nyData$Employees), color="#D55E00", linetype="dotted") +
-  geom_text(aes(x=1.5, label="Median", y = medianNY + 25), size = 2, colour="#D55E00") +
+  geom_hline(yintercept = median(nyData$Employees), color="steelblue", linetype="dotted") +
+  geom_text(aes(x=2, label="Overall Median for NY", y = medianNY + 60), size = 2, colour="steelblue") +
   scale_y_continuous(trans = log2_trans(), limits = c(lowerNY, upperNY)) +
   xlab("Industry") +
   ylab("Number of Employees") +
@@ -160,7 +160,7 @@ ggplot(nyData, aes(reorder(Industry, Employees, FUN = median), Employees)) +
   ggtitle("Number of Employees by Industry in New York")
 ```  
 
-From the previous problem, **NY** is the state with the 3rd most companies. The above graph uses log transformations to better capture the data within upper and lower bounds.
+From the previous problem, **NY** is the state with the 3rd most companies. The above graph uses log transformations to better capture the data within upper and lower bounds. The outliers were made to appear as empty red circles.
 
 
 ## Question 3
