@@ -149,10 +149,16 @@ medianNY <- median(nyData$Employees)
 
 # https://ggplot2.tidyverse.org/reference/geom_boxplot.html
 ggplot(nyData, aes(reorder(Industry, Employees, FUN = median), Employees)) + 
-  geom_boxplot(outlier.colour = "red", outlier.shape = 1) +
+  geom_boxplot(outlier.colour = "#FF003C", 
+               outlier.shape = 1) +
   coord_flip() +
-  geom_hline(yintercept = median(nyData$Employees), color="steelblue", linetype="dotted") +
-  geom_text(aes(x=2, label="Overall Median for NY", y = medianNY + 60), size = 2, colour="steelblue") +
+  geom_hline(yintercept = median(nyData$Employees), 
+             color="steelblue", 
+             linetype="dashed") +
+  geom_text(aes(x=2, 
+            label="Overall Median for Employees", y = medianNY + 175), 
+            size = 3, 
+            colour="steelblue") +
   scale_y_continuous(trans = log2_trans(), limits = c(lowerNY, upperNY)) +
   xlab("Industry") +
   ylab("Number of Employees") +
@@ -169,7 +175,23 @@ Now imagine you work for an investor and want to see which industries generate t
 
 ```{r}
 
-# Answer Question 3 here
+# Answer Question 3 here  
+
+# Store the complete cases
+rpeData <- inc[complete.cases(inc), ]
+
+# Create a new column called RPE that stores the Revenue per Employee for each case
+rpeData$RPE <- rpeData$Revenue / rpeData$Employees
+
+# Sample of the dataframe
+head(rpeData)
+
+# Obtain the max, min, and medians based on the RPE variable
+upperRPE <- max(rpeData$RPE)
+lowerRPE <- min(rpeData$RPE)
+medianRPE <- median(rpeData$RPE)
+
+
 
 ```
 
