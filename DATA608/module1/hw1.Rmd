@@ -2,7 +2,17 @@
 title: "Data 608 Assignment 1"
 author: "Sung Lee"
 date: "9/2/2021"
-output: html_document
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    smooth_scroll: false
+    toc_depth: 3
+number_sections: true
+theme: paper
 ---
 
 ** Original source for this assignment is from [https://github.com/charleyferrari/CUNY_DATA_608/blob/master/module1/hw1.rmd](https://github.com/charleyferrari/CUNY_DATA_608/blob/master/module1/hw1.rmd)
@@ -21,7 +31,6 @@ inc <- read.csv("https://raw.githubusercontent.com/charleyferrari/CUNY_DATA_608/
 And lets preview this data:
 
 ```{r}
-
 head(inc)
 
 ```
@@ -33,19 +42,85 @@ summary(inc)
 
 Think a bit on what these summaries mean. Use the space below to add some more relevant non-visual exploratory information you think helps you understand this data:
 
-```{r}
+```{r warning=FALSE}
 
 # Insert your code here, create more chunks as necessary
+library(knitr)
+library(xml2)
+library(dplyr)
+library(summarytools)
+library(psych)
 
+# For summarytools package
+opts_chunk$set(results = 'asis',      
+                comment = NA,
+                prompt  = FALSE,
+                cache   = FALSE)
+
+st_options(plain.ascii = FALSE,        
+            style        = "rmarkdown", 
+            footnote     = NA,          
+            subtitle.emphasis = FALSE)  
+```  
+
+Here is a look at the frequency of the data by Industry and State.
+
+```{r}
+# Print out a frequency table of the data by Industry
+freq(inc$Industry, order = "freq", plain.ascii = FALSE)
+
+```  
+
+Here is a look at the data by using the `psych` library. This would be looking at variables with the mean, standard deviation, et al.  
+
+```{r}
+
+# Growth Rate variable
+describe(inc$Growth_Rate)
+
+# Revenue variable
+describe(inc$Revenue)
+
+# Employeesvariable
+describe(inc$Employees)
+
+```  
+
+Because of the large values for `Revenue`, it would be best to represent with log.
+
+The following groups the data by City and State in descending order by Total Revenue in log form.
+
+```{r warning=FALSE, message=FALSE}
+inc %>%
+    group_by(City, State) %>%
+    summarise(totalRevenue = log(sum(Revenue))) %>%
+    arrange(desc(totalRevenue))
 ```
 
 ## Question 1
 
 Create a graph that shows the distribution of companies in the dataset by State (ie how many are in each state). There are a lot of States, so consider which axis you should use. This visualization is ultimately going to be consumed on a 'portrait' oriented screen (ie taller than wide), which should further guide your layout choices.
 
-```{r}
+
+The solution below uses the `forcats` and `ggplot2` libraries. More information about `forcats` is here [https://forcats.tidyverse.org/](https://forcats.tidyverse.org/)
+
+```{r warning=FALSE, message=FALSE}
 
 # Answer Question 1 here
+
+library(forcats)
+library(ggplot2)
+ggplot(inc, aes(x=fct_infreq(State))) + 
+    geom_bar(stat="count", fill = "steelblue",  width = 0.5, position = position_dodge(width=0.3)) +
+    coord_flip() +
+    geom_text(aes(label=..count..), stat="count", size=3, 
+              hjust=-0.2, color="black") +
+    xlab("State") +
+    ylab("Count") +
+    theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+    ggtitle("The 5,000 Fastest Growing Companies in US") + 
+    theme(panel.background = element_blank())
+
 
 ```
 
