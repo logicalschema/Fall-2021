@@ -113,7 +113,9 @@ The solution below uses the `forcats` and `ggplot2` libraries. More information 
 library(forcats)
 library(ggplot2)
 library(ggthemes)
-ggplot(inc, aes(x=fct_infreq(State))) + 
+
+# Used fct_rev to reverse the order because after coord_flip the least gets put on top
+ggplot(inc, aes(x=fct_rev(fct_infreq(State)))) + 
     geom_bar(stat="count", width = 0.7) +
     coord_flip() +
     xlab("State") +
@@ -127,11 +129,39 @@ ggplot(inc, aes(x=fct_infreq(State))) +
 
 Lets dig in on the state with the 3rd most companies in the data set. Imagine you work for the state and are interested in how many people are employed by companies in different industries. Create a plot that shows the average and/or median employment by industry for companies in this state (only use cases with full data, use R's `complete.cases()` function.) In addition to this, your graph should show how variable the ranges are, and you should deal with outliers.
 
-```{r}
+
+```{r warning=FALSE, message=FALSE}
 
 # Answer Question 2 here
+library(scales)
 
-```
+# Get the NY data set
+nyData <- inc[ which(inc$State == 'NY'), ]
+# Remove incomplete records in the NY Dataset
+nyData <- nyData[complete.cases(nyData), ] 
+# Display a sample
+head(nyData)
+
+# Obtain the max, min, and medians based on the Employees variable
+upperNY <- max(nyData$Employees)
+lowerNY <- min(nyData$Employees)
+medianNY <- median(nyData$Employees)
+
+# https://ggplot2.tidyverse.org/reference/geom_boxplot.html
+ggplot(nyData, aes(reorder(Industry, Employees, FUN = median), Employees)) + 
+  geom_boxplot(outlier.color = "grey", outlier.fill = "grey", outlier.size = 1) +
+  coord_flip() +
+  geom_hline(yintercept = median(nyData$Employees), color="#D55E00", linetype="dotted") +
+  geom_text(aes(x=1.5, label="Median", y = medianNY + 25), size = 2, colour="#D55E00") +
+  scale_y_continuous(trans = log2_trans(), limits = c(lowerNY, upperNY)) +
+  xlab("Industry") +
+  ylab("Number of Employees") +
+  theme_tufte() + 
+  ggtitle("Number of Employees by Industry in New York")
+```  
+
+From the previous problem, **NY** is the state with the 3rd most companies. The above graph uses log transformations to better capture the data within upper and lower bounds.
+
 
 ## Question 3
 
