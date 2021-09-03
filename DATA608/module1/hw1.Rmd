@@ -121,7 +121,7 @@ ggplot(inc, aes(x=fct_rev(fct_infreq(State)))) +
     xlab("State") +
     ylab("Count") +
     theme_tufte() +
-    ggtitle("The 5,000 Fastest Growing Companies in US") 
+    ggtitle("Distribution of Companies by State") 
 
 ```
 
@@ -180,18 +180,32 @@ Now imagine you work for an investor and want to see which industries generate t
 # Store the complete cases
 rpeData <- inc[complete.cases(inc), ]
 
-# Create a new column called RPE that stores the Revenue per Employee for each case
-rpeData$RPE <- rpeData$Revenue / rpeData$Employees
+
+# Create a new dataframe for plotting. Sums of Employees and Revenue become Employees_name and Revenue_name respectively
+plotrpeData <- rpeData %>%
+            group_by(Industry) %>%                         
+            summarise_at(vars(Employees, Revenue), list(name = sum))                
+
+# Rename the columns for plotrpeData 
+names(plotrpeData)[names(plotrpeData)=="Revenue_name"] <- "Revenue"
+names(plotrpeData)[names(plotrpeData)=="Employees_name"] <- "Employees"
+
+plotrpeData$RPE <- plotrpeData$Revenue / plotrpeData$Employees
 
 # Sample of the dataframe
-head(rpeData)
+head(plotrpeData)
 
-# Obtain the max, min, and medians based on the RPE variable
-upperRPE <- max(rpeData$RPE)
-lowerRPE <- min(rpeData$RPE)
-medianRPE <- median(rpeData$RPE)
+# Create the plot
+ggplot(plotrpeData, aes(x=reorder(Industry, RPE), y=RPE/10000)) + 
+    geom_bar(stat="identity", fill="#FF003C") +
+    coord_flip() +
+    xlab("Industry") +
+    ylab("Revenue Per Employee: 1: 10k") +
+    theme_tufte() +
+    ggtitle("Revenue Per Employee By Industry") 
 
 
+```  
 
-```
+It looks like `Computer Hardware`, `Energy`, and `Construction` are the top three industries generate the most revenue per employee. 
 
