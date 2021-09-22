@@ -1,0 +1,25 @@
+---
+title: "Data 608 Homework 2"
+author: "Sung Lee"
+date: "9/22/2021"
+output: html_document
+---
+
+
+```{r}
+library(markdown)
+
+
+# result <- rpubsUpload(title='Data 608 Homework 2',htmlFile='sunglee_data608_hw2.html',method=getOption('rpubs.upload.method','auto'))
+
+## Not run: 
+# upload a document
+result <- rpubsUpload("Data 608 Homework 2", "sunglee_data608_hw2.html")
+if (!is.null(result$continueUrl)) 
+    browseURL(result$continueUrl) else stop(result$error)
+
+# update the same document with a new title
+updateResult <- rpubsUpload("Data 608 Homework 2", "sunglee_data608_hw2.html", result$id)
+
+
+```
