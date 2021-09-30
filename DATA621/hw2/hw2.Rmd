@@ -1,0 +1,66 @@
+---
+title: "Data 621 Homework 2"
+author: "Sung Lee"
+date: "9/30/2021"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    smooth_scroll: false
+    toc_depth: 3
+number_sections: true
+theme: paper
+---
+
+# Overview  
+
+In this homework assignment, you will work through various classification metrics. You will be asked to create functions in R to carry out the various calculations. You will also investigate some functions in packages that will let you obtain the equivalent results. Finally, you will create graphical output that also can be used to evaluate the output of classification models, such as binary logistic regression.  
+
+
+# Part 1  
+The data was downloaded from BlackBoard and posted on my GitHub site. Here is the [link](https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA621/hw2/classification-output-data.csv).
+
+```{r}
+
+data <- read.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA621/hw2/classification-output-data.csv')
+
+# Snippet of data
+head(data)  
+
+```  
+
+
+# Part 2  
+
+The data set has three key columns we will use:  
+
+* **class**: the actual class for the observation  
+
+* **scored.class**: the predicted class for the observation (based on a threshold of 0.5)  
+
+* **scored.probability**: the predicted probability of success for the observation  
+
+Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?  
+
+
+```{r}
+
+
+
+confusionMatrix <- table("Actual" = data$class, "Predicted" = data$scored.class)
+confusionMatrix
+```
+
+
+# Part 3  
+
+Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the accuracy of the predictions.  
+
+$$Accuracy = \frac{TP + TN}{TP + FP + TN + FN}$$  
+
+
+
+
