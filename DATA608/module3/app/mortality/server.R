@@ -95,6 +95,78 @@ shinyServer(function(input, output, session) {
         
         
     })
+    
+    
+    output$usmap <- renderLeaflet({ 
+        withProgress(message = 'Calculations in progress',
+                     detail = 'Loading...', value = 0, {
+                         for (i in 1:20) {
+                             incProgress(1/10)
+                             Sys.sleep(0.01)
+                         }
+                     })
+        
+        mapYearSelect <- input$mapYear
+        mapConditionSelect <- input$mapCondition
+        
+        temp2 <- data[data$Year == mapYearSelect & data$ICD.Chapter == mapConditionSelect,]
+        
+        # Used for replacing NA values
+        replaceValue <- mean(temp2$Crude.Rate, na.rm=TRUE)
+        
+        names(states)
+        
+        
+        states$Crude.Rate <- temp2$Crude.Rate[match(states$SHORTNAME, temp2$State)]
+        states$Crude.Rate[is.na(states$Crude.Rate)] <- replaceValue
+        
+        
+        
+        
+        #bins <- c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
+        #pal <- colorBin("YlOrRd", domain = states$Crude.Rate, bins = bins)
+        
+        x <- cut(temp2$Crude.Rate, 3, include.lowest=TRUE)
+        z <- sapply(str_extract_all(x, "-?[0-9.]+"), function(y) max(as.numeric(y)))
+        z <- unique(sort(z))
+        z <- c(0, z, Inf)
+        
+        bins <- z
+        pal <- colorBin("Reds", domain = states$Crude.Rate, bins = bins)
+        
+        labels <- sprintf(
+            "<strong>%s</strong><br/>%g Crude.Rate",
+            states$NAME, states$Crude.Rate
+        ) %>% lapply(htmltools::HTML)
+        
+        
+        leaflet(states) %>%
+            setView(-96, 37.8, 4) %>%
+            addProviderTiles("MapBox", options = providerTileOptions(
+                id = "mapbox.light",
+                accessToken = Sys.getenv('pk.eyJ1IjoiY3VueXNzbGVlIiwiYSI6ImNrdTlzNmF4azA5dzYyeG5ubXZvZDRxbzQifQ.Z4cygOgWVTTt9DkUVkCbgw'))) %>%
+            addPolygons(
+                fillColor = ~pal(Crude.Rate),
+                weight = 2,
+                opacity = 1,
+                color = "white",
+                dashArray = "3",
+                fillOpacity = 0.7,
+                highlightOptions = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 0.7,
+                    bringToFront = TRUE),
+                label = labels,
+                labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto")) %>%
+            addLegend(pal = pal, values = ~density, opacity = 0.7, title = NULL,
+                      position = "bottomright")
+
+    })
         
 
 })
