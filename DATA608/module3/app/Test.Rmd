@@ -1,0 +1,82 @@
+---
+title: "Test"
+author: "Sung Lee"
+date: "10/1/2021"
+output: html_document
+---
+
+
+```{r}
+library(leaflet)
+library(leaflet.extras) #for demo heat map
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(forcats)
+library(scales)
+
+
+data <- read.csv("cleaned-cdc-mortality-1999-2010-2.csv", 
+                 sep = ",", 
+                 header = TRUE)
+
+head(data)
+unique(data$ICD.Chapter)
+names(data)
+```
+
+
+```{r}
+temp <- data[data$Year == 2010 & data$ICD.Chapter == "Neoplasms",]
+
+temp %>%
+  mutate(State = fct_reorder(State, Crude.Rate)) %>%
+  ggplot(aes(x=State, y=Crude.Rate)) + 
+        geom_bar(stat="identity", fill="firebrick2") +
+        #labs(title = paste("Frequency of Licenses by Year for ", input$mapBoro2, sep="")) + 
+        xlab("State") +
+        ylab("Crude Mortality Rate") +
+        coord_flip() +
+        theme(panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank(), 
+              panel.background = element_blank(), 
+              axis.line = element_line(colour = "black") 
+              )
+
+```  
+
+
+```{r}
+
+# Dataframe for the condition
+temp <- data[data$ICD.Chapter == "Pregnancy, childbirth and the puerperium",]
+
+# To get the national average
+agg_sum <- aggregate(temp[,c("Deaths", "Population")],by=list(temp$Year),FUN=sum, na.rm=TRUE)
+agg_sum['NationalAverage'] <- agg_sum$Deaths / agg_sum$Population * 100000
+
+#Year, Deaths, Population, NationalAverage
+colnames(agg_sum)[1] <- "Year"
+
+tempState <- temp[temp$State == 'NJ',]
+tempState$NationalAverage <- agg_sum$NationalAverage[match(tempState$Year, agg_sum$Year)]
+
+tempState
+
+
+df5 <- tempState %>% select(Year, Crude.Rate, NationalAverage) %>% gather("Crude", "Value", -Year)
+
+df5 %>% ggplot() + aes(x = Year, y = Value, fill = Crude) +
+  geom_col(position = "dodge") +
+  ggtitle('Crude Rate vs National Crude Rate') +
+  xlab('Year') +
+  ylab('Crude Rate') +
+  scale_x_continuous(breaks= pretty_breaks()) +
+  theme(panel.background = element_rect(fill = "white", color = NA))
+
+
+
+
+```
+

@@ -2,7 +2,9 @@ Module 3
  
 I have provided you with data about mortality from all 50 states and the District of Columbia. 
 Please access it at 
-https://github.com/charleyferrari/CUNY_DATA_608/tree/master/module3/data​ You are 
+https://github.com/charleyferrari/CUNY_DATA_608/tree/master/module3/data​ 
+
+You are 
 invited to gather more data from our provider, the CDC WONDER system, at 
 https://wonder.cdc.gov/ucd-icd10.html​ . 
  
