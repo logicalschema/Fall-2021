@@ -1,7 +1,6 @@
 library(shiny)
-
 navbarPage(
-    
+
     title = div(
         div(
             style="padding: 0px 25x;",
@@ -14,10 +13,16 @@ navbarPage(
         )
     ), 
     
+
+    
+    
+
     
     # Tab for Question 1: Neoplasm condition for 2010 is selected by default
     tabPanel("Question 1", inputId = 'q1Tab',
              
+             # Added Google Analytics Code
+             tags$head(includeHTML('google.html')),
              sidebarLayout(
                  sidebarPanel(
                      
