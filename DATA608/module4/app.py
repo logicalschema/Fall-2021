@@ -27,7 +27,9 @@ server = app.server
 app.config["suppress_callback_exceptions"] = True
 
 # Load data
-data = dd.read_csv('2015_Street_Tree_Census_-_Tree_Data.csv')
+# You can download the data here: https://data.cityofnewyork.us/Environment/2015-Street-Tree-Census-Tree-Data/uvpi-gqnh
+# The csv was not uploaded to Github because of file constraints, but you can compress it.
+data = dd.read_csv('assets/2015_Street_Tree_Census_-_Tree_Data.csv')
 data = data.dropna(subset=['health', 'steward'])
 
 
@@ -70,7 +72,11 @@ steward_key = {
     3: '4orMore'
     }
 
-
+# Mapbox API Key
+# Stored in another file. Please obtain your own key from mapbox.com
+key_file = open('assets/api.key')
+lines = key_file.readlines()
+mapbox_api = lines[0].rstrip()
 
 
 
@@ -277,7 +283,7 @@ def update_map(spc_dropdow_name, borough_dropdown, steward_slider):
     fig = px.scatter_mapbox(dff[:1], lat='latitude', lon='longitude', center = center, zoom=10)
 
     fig.update_layout(mapbox_style="light",
-                      mapbox_accesstoken="",
+                      mapbox_accesstoken=mapbox_api,
                       mapbox_layers=[
                           {
                         "sourcetype": "image",
