@@ -23,6 +23,8 @@ app = dash.Dash(
         {"name": "viewport", "content": "width=device-width, initial-scale=1.0"}
     ],
 )
+
+
 server = app.server
 app.config["suppress_callback_exceptions"] = True
 
@@ -344,6 +346,9 @@ def update_textbox(spc_dropdow_name, borough_dropdown, steward_slider):
    ]
 
    return children
+
+
+
 
 # Running the server
 if __name__ == "__main__":
