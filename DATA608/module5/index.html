@@ -9,6 +9,7 @@
 
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
 <script>
 function reverseString(str) {
@@ -76,5 +77,96 @@ document.getElementById("function1").innerHTML = printMe;
 
 <h1>Intermediate</h1>
 
+<script>
+//https://gist.github.com/jfreels/6814721
+var tabulate = function (data,columns) {
+  var table = d3.select('#load-csv').append('table')
+  var thead = table.append('thead')
+  var tbody = table.append('tbody')
+
+
+    table.attr("id", "csv-table")
+
+	thead.append('tr')
+	  .selectAll('th')
+	    .data(columns)
+	    .enter()
+	  .append('th')
+	    .text(function (d) { return d })
+
+	var rows = tbody.selectAll('tr')
+	    .data(data)
+	    .enter()
+	  .append('tr')
+
+	var cells = rows.selectAll('td')
+	    .data(function(row) {
+	    	return columns.map(function (column) {
+	    		return { column: column, value: row[column] }
+	      })
+      })
+      .enter()
+    .append('td')
+      .text(function (d) { return d.value })
+
+  return table;
+}
+</script>
+
+
+<script>
+d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/module5/data/presidents.csv',function (data) {
+	var columns = ['Name','Height','Weight']
+  tabulate(data,columns)
+})
+</script>
+
+<h2>Load csv file</h2>
+<div id="load-csv"></div>
+
+
+
+
+
+
+
+<h2>Text Input for CSV File</h2>
+
+<input type="text" id="search-csv" onkeyup="myFunction()" placeholder="Search for names.." title="Type in a name">
+
+
+
+
+<div id="div-search-csv"></div>
+
+
+
 </body>
+
+<script>
+
+
+</script>
+
+<script>
+//https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_filter_table
+function myFunction() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("myTable");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }       
+  }
+}
+</script>
 </html>
