@@ -136,7 +136,6 @@ d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/m
 
 
 
-
 <div id="div-search-csv"></div>
 
 
@@ -145,16 +144,15 @@ d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/m
 
 <script>
 
-
 </script>
 
 <script>
 //https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_filter_table
 function myFunction() {
   var input, filter, table, tr, td, i, txtValue;
-  input = document.getElementById("myInput");
+  input = document.getElementById("search-csv");
   filter = input.value.toUpperCase();
-  table = document.getElementById("myTable");
+  table = document.getElementById("csv-table");
   tr = table.getElementsByTagName("tr");
   for (i = 0; i < tr.length; i++) {
     td = tr[i].getElementsByTagName("td")[0];
