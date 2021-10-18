@@ -132,7 +132,7 @@ d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/m
 
 <h2>Text Input for CSV File</h2>
 
-<input type="text" id="search-csv" onkeyup="myFunction()" placeholder="Search for names.." title="Type in a name">
+<input type="text" id="search-csv" onkeyup="searchCSV()" placeholder="Search for names.." title="Type in a name">
 
 
 
@@ -148,7 +148,7 @@ d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/m
 
 <script>
 //https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_filter_table
-function myFunction() {
+function searchCSV() {
   var input, filter, table, tr, td, i, txtValue;
   input = document.getElementById("search-csv");
   filter = input.value.toUpperCase();
