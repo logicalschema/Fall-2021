@@ -17,7 +17,7 @@ import datashader.transfer_functions as tf
 
 
 # app initialize
-app = dash.Dash(
+dash_app = dash.Dash(
     __name__,
     meta_tags=[
         {"name": "viewport", "content": "width=device-width, initial-scale=1.0"}
@@ -25,13 +25,13 @@ app = dash.Dash(
 )
 
 
-server = app.server
-app.config["suppress_callback_exceptions"] = True
+app = dash_app.server
+dash_app.config["suppress_callback_exceptions"] = True
 
 # Load data
 # You can download the data here: https://data.cityofnewyork.us/Environment/2015-Street-Tree-Census-Tree-Data/uvpi-gqnh
 # The csv was not uploaded to Github because of file constraints, but you can compress it.
-data = dd.read_csv('assets/2015_Street_Tree_Census_-_Tree_Data.csv')
+data = dd.read_csv('assets/2015_Street_Tree_Census_-_Tree_Data.csv.gz', blocksize = None)
 data = data.dropna(subset=['health', 'steward'])
 
 
@@ -89,7 +89,7 @@ def build_banner():
       id="banner",
       className="banner",
       children=[
-        html.Img(src=app.get_asset_url("cunysps_2021_2linelogo_spsblue_1.png"), style={'height':'75%', 'width':'75%'}),
+        html.Img(src=dash_app.get_asset_url("cunysps_2021_2linelogo_spsblue_1.png"), style={'height':'75%', 'width':'75%'}),
         html.H6("NYC Boroughs and Tree Heath 2015"),
         ],
     )
@@ -98,7 +98,7 @@ def build_graph_title(title):
    return html.P(className="graph-title", children=title)
 
 
-app.layout = html.Div(
+dash_app.layout = html.Div(
   children=[ 
     html.Div(
         id="top-row",
@@ -203,7 +203,7 @@ app.layout = html.Div(
 
 
 # Update bar plot
-@app.callback(
+@dash_app.callback(
     Output("form-bar-graph", "figure"),
     [
         Input("spc-dropdown", "value"),
@@ -249,7 +249,7 @@ def update_bar(spc_dropdow_name, borough_dropdown, steward_slider):
 
 
 # Update map
-@app.callback(
+@dash_app.callback(
     Output("map-graph", "figure"),
     [
         Input("spc-dropdown", "value"),
@@ -302,7 +302,7 @@ def update_map(spc_dropdow_name, borough_dropdown, steward_slider):
 
 
 # Update bar plot
-@app.callback(
+@dash_app.callback(
     Output("lower-text-box", "children"),
     [
         Input("spc-dropdown", "value"),
@@ -352,4 +352,4 @@ def update_textbox(spc_dropdow_name, borough_dropdown, steward_slider):
 
 # Running the server
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    dash_app.run_server(debug=True)

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+	<title>Data 608 Assignment #5: Sung Lee</title>
+</head>
+<body>
+
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+<script>
+function reverseString(str) {
+	var inputString = document.getElementById("inputString").value;
+	var printMe = "";
+
+    if(document.getElementById("inputString").value.length == 0){
+    	printMe = "The input string is empty.";
+    } else {
+    	printMe = inputString.split('').reverse().join('');
+
+    }
+
+	document.getElementById("reverseText").innerHTML = printMe;
+}
+
+
+function matrixMultiple(){
+
+//Assigning the variable to the user input
+	var inputNumber = parseInt(document.getElementById("inputNumber").value);
+	var printMe = "";
+	var count = 1;
+
+	if (!isNaN(inputNumber)){
+		for (let row = 0; row < 5; row++) {
+			let line = "<tr>"
+			for (let column = 0; column < 4; column++){
+				line = line.concat("<td>" + String(inputNumber * count) + "</td>");
+				count += 1;
+			}
+			line = line.concat("</tr>");
+			printMe = printMe.concat(line);
+		} 
+
+	} else {
+		printMe = "<tr><td>Invalid input for multiples. You need to input an integer.</td></tr>";
+	}
+
+
+// Print the Multiples
+document.getElementById("function1").innerHTML = printMe;
+}
+
+
+</script>
+
+
+
+<h1>Beginner</h1>
+<p id="reverse"></p>
+         Input for Reverse String Function : <input type="text" id="inputString"> 
+		 
+        <button  onclick="reverseString()">Reverse the string</button>
+
+<p id="reverseText"></p>
+
+<p id="multiple"></p>
+         Input for Multiple Function : <input type="text" id="inputNumber"> 
+        <button  onclick="matrixMultiple()">Print the first 20 multiples</button>
+
+<table id="function1">
+</table>
+<br>
+
+<h1>Intermediate</h1>
+
+</body>
+</html>
