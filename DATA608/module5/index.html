@@ -3,63 +3,40 @@
 <head>
 	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 	<meta content="utf-8" http-equiv="encoding">
+	<link rel="stylesheet" href="style.css">
 	<title>Data 608 Assignment #5: Sung Lee</title>
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-17776756-1"></script>
+	<script>
+  	window.dataLayer = window.dataLayer || [];
+  	function gtag(){dataLayer.push(arguments);}
+  	gtag('js', new Date());
+
+  	gtag('config', 'UA-17776756-1');
+	</script>
+
 </head>
 <body>
+ <div class="header">
+ 	<img src="data/cunysps_2021_2linelogo_spsblue_1.png" alt="CUNY SPS Logo" width="350" height="64"> 
+</div> 
 
 
+<script src="script.js"></script> 
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
-<script>
-function reverseString(str) {
-	var inputString = document.getElementById("inputString").value;
-	var printMe = "";
 
-    if(document.getElementById("inputString").value.length == 0){
-    	printMe = "The input string is empty.";
-    } else {
-    	printMe = inputString.split('').reverse().join('');
+<h6>Data 608 Homework #5: Sung Lee</h6>
+<p>The purpose of this assignment is to work with JavaScript in creating different functions. The following are links for this project.</p>
 
-    }
+<ul>
+  <li><a href="https://github.com/logicalschema/Fall-2021/tree/main/DATA608/module5">GitHub</a></li>
+  <li><a href="https://sunglee.org/data608/">Website to View the Functions</a></li>
+</ul> 
 
-	document.getElementById("reverseText").innerHTML = printMe;
-}
-
-
-function matrixMultiple(){
-
-//Assigning the variable to the user input
-	var inputNumber = parseInt(document.getElementById("inputNumber").value);
-	var printMe = "";
-	var count = 1;
-
-	if (!isNaN(inputNumber)){
-		for (let row = 0; row < 5; row++) {
-			let line = "<tr>"
-			for (let column = 0; column < 4; column++){
-				line = line.concat("<td>" + String(inputNumber * count) + "</td>");
-				count += 1;
-			}
-			line = line.concat("</tr>");
-			printMe = printMe.concat(line);
-		} 
-
-	} else {
-		printMe = "<tr><td>Invalid input for multiples. You need to input an integer.</td></tr>";
-	}
-
-
-// Print the Multiples
-document.getElementById("function1").innerHTML = printMe;
-}
-
-
-</script>
-
-
-
-<h1>Beginner</h1>
+<h6>Beginner</h6>
 <p id="reverse"></p>
          Input for Reverse String Function : <input type="text" id="inputString"> 
 		 
@@ -74,44 +51,8 @@ document.getElementById("function1").innerHTML = printMe;
 <table id="function1">
 </table>
 <br>
-
-<h1>Intermediate</h1>
-
-<script>
-//https://gist.github.com/jfreels/6814721
-var tabulate = function (data,columns) {
-  var table = d3.select('#load-csv').append('table')
-  var thead = table.append('thead')
-  var tbody = table.append('tbody')
-
-
-    table.attr("id", "csv-table")
-
-	thead.append('tr')
-	  .selectAll('th')
-	    .data(columns)
-	    .enter()
-	  .append('th')
-	    .text(function (d) { return d })
-
-	var rows = tbody.selectAll('tr')
-	    .data(data)
-	    .enter()
-	  .append('tr')
-
-	var cells = rows.selectAll('td')
-	    .data(function(row) {
-	    	return columns.map(function (column) {
-	    		return { column: column, value: row[column] }
-	      })
-      })
-      .enter()
-    .append('td')
-      .text(function (d) { return d.value })
-
-  return table;
-}
-</script>
+<hr>
+<h6>Intermediate</h6>
 
 
 <script>
@@ -121,16 +62,10 @@ d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/m
 })
 </script>
 
-<h2>Load csv file</h2>
+<h6>Load csv file</h6>
 <div id="load-csv"></div>
 
-
-
-
-
-
-
-<h2>Text Input for CSV File</h2>
+<h6>Text Input for CSV File</h6>
 
 <input type="text" id="search-csv" onkeyup="searchCSV()" placeholder="Search for names.." title="Type in a name">
 
@@ -142,9 +77,7 @@ d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/m
 
 </body>
 
-<script>
 
-</script>
 
 <script>
 //https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_filter_table
