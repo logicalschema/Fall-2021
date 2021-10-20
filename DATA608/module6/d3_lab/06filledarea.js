@@ -1,4 +1,4 @@
-d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/module6/d3_lab/ue_industry.csv', data => {
+d3.csv('ue_industry.csv', data => {
 
     const industries = ['Agriculture','Business services','Construction','Education and Health',
         'Finance','Government','Information','Leisure and hospitality','Manufacturing',

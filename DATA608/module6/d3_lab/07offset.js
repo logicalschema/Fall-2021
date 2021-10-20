@@ -1,4 +1,4 @@
-d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/module6/d3_lab/ue_industry.csv', data => {
+d3.csv('ue_industry.csv', data => {
 
     const industries = ['Agriculture','Business services','Construction','Education and Health',
         'Finance','Government','Information','Leisure and hospitality','Manufacturing',
@@ -36,12 +36,16 @@ d3.csv('https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA608/m
         .y1(d => yScale(d[1]))
         .curve(d3.curveBasis);
 
+
+
     d3.select('#part7')
         .selectAll('path')
         .data(stackLayout(data))
         .enter().append('path')
         .attr('d', d => stackArea(d))
         .attr('class', d => 'path7')
-        .style('fill', d => fillScale(d.key));
 
+        //https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/translate()
+        .attr('transform', 'translate(0, -300)')
+        .style('fill', d => fillScale(d.key));
 });
