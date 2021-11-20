@@ -61,7 +61,8 @@ library(tidyverse)
 library(naniar)
 library(reshape2)
 library(ggplot2)
-
+library(readr)
+library(dplyr)
 # Used for skewness
 library(moments)
 
@@ -138,21 +139,576 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 
 # Reading in the csv files
-trainData <- read.csv("https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA621/hw4/insurance_training_data.csv")
+trainData <- read_csv("https://github.com/logicalschema/Fall-2021/raw/main/DATA621/hw4/insurance_training_data.csv.gz")
 
 evalData <- read.csv("https://raw.githubusercontent.com/logicalschema/Fall-2021/main/DATA621/hw4/insurance-evaluation-data.csv")
 
+# Remove the INDEX column
+trainData = subset(trainData, select = -c(INDEX) )
+evalData = subset(evalData, select = -c(INDEX) )
+
 ```
 
-The following is a snippet of the training data along with summary and other statistics:
+The following is a snippet of the training data:
+
+```{r, echo=FALSE}
+head(trainData)
+```  
+
+The data needs to be cleaned. Before going to data preparation, let's look at the unique values for the columns: `MSTATUS`,`SEX`,`EDUCATION`,`JOB`,`CAR_USE`,`CAR_TYPE`,`RED_CAR`,`REVOKED`,`URBANICITY`. With these unique values, I will see if I can convert them to binary values.  
+
+
+```{r, echo=FALSE}
+uniqueValues <- lapply(trainData[, c("MSTATUS","SEX","EDUCATION","JOB","CAR_USE","CAR_TYPE","RED_CAR","REVOKED","URBANICITY")], unique)
+print(uniqueValues)
+
+```
+
+# Data Preparation  
+
+In this section, I will prepare the data for evaluation.
+
+## Data Types
+
+The variables `Age`, `YOJ`, and `CAR_AGE` have missing values. In addition, various variables are classified as strings and the monetary values have to be converted to numeric values. This will be remedied in data preparation.
+
+```{r, echo=FALSE}
+strip_dollars <- function(x){
+  x <- as.character(x)
+  x <- gsub(",", "", x)
+  x <- gsub("\\$", "", x)
+  as.numeric(x)
+}
+
+fix_data_types <- function(cleanMe){
+  cleanMe %>%
+    rowwise() %>%
+    mutate(INCOME = strip_dollars(INCOME),
+           HOME_VAL = strip_dollars(HOME_VAL),
+           BLUEBOOK = strip_dollars(BLUEBOOK),
+           OLDCLAIM = strip_dollars(OLDCLAIM)) %>%
+    ungroup()
+}
+
+clean_values <- function(cleanMe){
+  cleanMe %>%
+    rowwise() %>%
+    mutate(CAR_AGE = ifelse(CAR_AGE < 0, NA, CAR_AGE)) %>%
+    mutate(MSTATUS = ifelse(MSTATUS == 'z_No', 0, 1)) %>%
+    mutate(RED_CAR = ifelse(RED_CAR == 'no', 0, 1)) %>%
+    mutate(REVOKED = ifelse(REVOKED == 'No', 0, 1)) %>%
+    mutate(URBANICITY = ifelse(URBANICITY == 'z_Highly Rural/ Rural', 0, 1)) %>%
+    ungroup()
+}
+
+
+
+trainData <- trainData %>%
+  fix_data_types() %>%
+  clean_values()
+
+
+evalData <- evalData %>%
+  fix_data_types() %>%
+  clean_values()
+
+
+```  
+
+Here is a snippet of the new training data:
+
 
 ```{r, echo=FALSE}
 head(trainData)
 summary(trainData)
 
-# https://cran.r-project.org/web/packages/pastecs/pastecs.pdf
-stat.desc(trainData, basic = FALSE)
 ```  
 
 
+## Missing Values  
+
+From the summary information in the previous section, `YOJ` has 454 NA values, `INCOME` has 445 NA values, `AGE` has 6 NA values, `HOME_VAL` has 464, and `CAR_AGE` has 511. I decided to replace the missing values with mean values.
+
+```{r, echo=FALSE}
+
+# Replace YOJ, INCOME, AGE, HOME_VAL, and CAR_AGE for train and eval Data
+trainData$YOJ[is.na(trainData$YOJ)] <- mean(trainData$YOJ, na.rm=TRUE)
+trainData$INCOME[is.na(trainData$INCOME)] <- mean(trainData$INCOME, na.rm=TRUE)
+trainData$AGE[is.na(trainData$AGE)] <- mean(trainData$AGE, na.rm=TRUE)
+trainData$HOME_VAL[is.na(trainData$HOME_VAL)] <- mean(trainData$HOME_VAL, na.rm=TRUE)
+trainData$CAR_AGE[is.na(trainData$CAR_AGE)] <- mean(trainData$CAR_AGE, na.rm=TRUE)
+
+evalData$YOJ[is.na(evalData$YOJ)] <- mean(evalData$YOJ, na.rm=TRUE)
+evalData$INCOME[is.na(evalData$INCOME)] <- mean(evalData$INCOME, na.rm=TRUE)
+evalData$AGE[is.na(evalData$AGE)] <- mean(evalData$AGE, na.rm=TRUE)
+evalData$HOME_VAL[is.na(evalData$HOME_VAL)] <- mean(evalData$HOME_VAL, na.rm=TRUE)
+evalData$CAR_AGE[is.na(evalData$CAR_AGE)] <- mean(evalData$CAR_AGE, na.rm=TRUE)
+
+```
+
+## Log Transformation  
+
+With the distribution of `TARGET_AMT`, `INCOME`, and `HOME_VAL`, I will create new variables using log transformations.  
+
+```{r, echo=FALSE}
+
+# Log transformations for the variables
+trainData$logTARGET_AMT <- log1p(trainData$TARGET_AMT)
+hist(trainData$logTARGET_AMT)
+
+trainData$logINCOME <- log1p(trainData$INCOME)
+hist(trainData$logINCOME)
+
+trainData$logHOME_VAL <- log1p(trainData$HOME_VAL)
+hist(trainData$logHOME_VAL)
+
+# Perform the transformations on the evaluation data
+evalData$logTARGET_AMT <- log1p(evalData$TARGET_AMT)
+evalData$logINCOME <- log1p(evalData$INCOME)
+evalData$logHOME_VAL <- log1p(evalData$HOME_VAL)
+
+```
+
+
+
+# Data Exploration Part II  
+
+Here is a new look at the training data with the corrected variable data types and adjusting NA values.
+
+## Distributions  
+
+The following are the distributions for the variables:
+
+```{r, echo=FALSE}
+par(mfrow = c(3, 3))
+
+plotData <- melt(trainData)
+
+ggplot(plotData, aes(x= value)) + 
+  theme(panel.border = element_blank(), panel.background = element_blank(), 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  geom_density(fill='dodgerblue') + facet_wrap(~variable, scales = 'free') 
+
+```  
+
+## Boxplots  
+
+The following is a plot of the boxplots for the variables:  
+
+
+
+```{r, echo=FALSE}
+p1 <- ggplot(trainData) + 
+  aes(y =logTARGET_AMT, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p2 <- ggplot(trainData) + 
+  aes(y =KIDSDRIV, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p3 <- ggplot(trainData) + 
+  aes(y =AGE, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p4 <- ggplot(trainData) + 
+  aes(y =HOMEKIDS, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p5 <- ggplot(trainData) + 
+  aes(y =YOJ, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p6 <- ggplot(trainData) + 
+  aes(y =logINCOME, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p7 <- ggplot(trainData) + 
+  aes(y =PARENT1, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p8 <- ggplot(trainData) + 
+  aes(y =logHOME_VAL, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p9 <- ggplot(trainData) + 
+  aes(y =MSTATUS, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p10 <- ggplot(trainData) + 
+  aes(y =SEX, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p11 <- ggplot(trainData) + 
+  aes(y =EDUCATION, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p12 <- ggplot(trainData) + 
+  aes(y =JOB, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p13 <- ggplot(trainData) + 
+  aes(y =TRAVTIME, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p14 <- ggplot(trainData) + 
+  aes(y =CAR_USE, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p15 <- ggplot(trainData) + 
+  aes(y =RED_CAR, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p16 <- ggplot(trainData) + 
+  aes(y =OLDCLAIM, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p17 <- ggplot(trainData) + 
+  aes(y =CLM_FREQ, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+
+p18 <- ggplot(trainData) + 
+  aes(y =REVOKED, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p19 <- ggplot(trainData) + 
+  aes(y =MVR_PTS, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+p20 <- ggplot(trainData) + 
+  aes(y =CAR_AGE, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+
+p21 <- ggplot(trainData) + 
+  aes(y =URBANICITY, x = as.factor(TARGET_FLAG)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("TARGET_FLAG")
+
+
+multiplot(p1, p2, p3, p4, p5, p6, cols=3)
+multiplot(p7, p8, p9, p10, p11, p12, cols=3)
+multiplot(p13, p14, p15, p16, p17, p18, cols=3)
+multiplot(p19, p20, p21, cols=3)
+
+
+```
+
+## Correlation  
+
+The following constructs a correlation matrix with heatmap. This matrix measures linear relationships between the variables. These values range from -1 to 1. If the value is close to -1, there is a strong negative correlation between the variables. If there is a value close to 1, there is a strong positive correlation between the variables.
+
+
+```{r, echo=FALSE}
+
+# Create a target variable with the numeric value of TARGET_FLAG
+
+trainData$target <- as.numeric(trainData$TARGET_FLAG)
+evalData$target <- as.numeric(evalData$TARGET_FLAG)
+
+
+trainData %>%
+        complete.cases() %>% 
+        trainData[., c("target", "logTARGET_AMT", "KIDSDRIV", "AGE", "HOMEKIDS", "YOJ", "logINCOME", "logHOME_VAL", "MSTATUS", "TRAVTIME", "BLUEBOOK", "TIF", "RED_CAR", "OLDCLAIM", "CLM_FREQ", "REVOKED", "MVR_PTS", "CAR_AGE", "URBANICITY" )] %>%                         
+        cor() %>%
+        corrplot(method = "number")
+
+```
+
+
+```{r, echo=FALSE}
+cor(trainData[sapply(trainData, is.numeric)])
+
+``` 
+
+## Skewness  
+
+The following looks at the skewness of each of the variables:  
+
+```{r, echo=FALSE}
+skewness(trainData[sapply(trainData, is.numeric)])
+```  
+
+## Splitting  
+
+I split the training data into two partitions.  
+
+```{r, echo=FALSE}
+set.seed(11192021)
+trainIndex <- createDataPartition(trainData$target, p = 0.8, 
+                                  list = FALSE)
+
+training <- trainData[trainIndex, ]
+evaluation <- trainData[-trainIndex, ]
+
+head(training)
+head(evaluation)
+```  
+
+# Models  
+
+In developing the models, I used the `leaps` [package](https://cran.r-project.org/web/packages/leaps/leaps.pdf). According to the documentation, "leaps() performs an exhaustive search for the best subsets of the variables in x for predicting y in linear regression, using an efficient branch-and-bound algorithm."  
+
+
+## 1st Model  
+
+For the 1st model, I decided to use the variables `SEX`, `logINCOME`, and `logHOME_VAL`. Here is a summary of the model:
+
+```{r, echo=FALSE}
+reduced_model <- glm(target ~ SEX + logINCOME + logHOME_VAL, data=training, family = 'binomial')
+summary(reduced_model)
+
+```  
+
+Now, let's look at how the model works with our test data. 
+
+
+```{r, echo=FALSE}
+predictionProbabilities <- predict(reduced_model, evaluation, type="response")
+
+actuals_predictions <- data.frame(cbind(actual=evaluation$target, predictedProb=predictionProbabilities))
+actuals_predictions$prediction <- ifelse(actuals_predictions$predictedProb < 0.5, 0, 1)
+
+head(actuals_predictions)
+confusionMatrix(as.factor(actuals_predictions$prediction), as.factor(actuals_predictions$actual), positive = '1')
+
+```
+
+
+```{r, echo=FALSE}
+proc = roc(actuals_predictions$actual, actuals_predictions$prediction)
+plot(proc)
+
+```
+
+```{r, echo=FALSE}
+print(proc$auc)
+```
+
+## Second Model  
+
+
+For the 2nd model, I decided to use the variables `SEX`, AGE`, `RED_CAR`, `URBANICITY`, `CAR_TYPE`, and `YOJ`. Here is a summary of the model:
+
+```{r, echo=FALSE}
+reduced_model <- glm(target ~ SEX + AGE + RED_CAR + URBANICITY + CAR_TYPE + YOJ, data=training, family = 'binomial')
+summary(reduced_model)
+
+```  
+
+Now, let's look at how the model works with our test data. 
+
+
+```{r, echo=FALSE}
+predictionProbabilities <- predict(reduced_model, evaluation, type="response")
+
+actuals_predictions <- data.frame(cbind(actual=evaluation$target, predictedProb=predictionProbabilities))
+actuals_predictions$prediction <- ifelse(actuals_predictions$predictedProb < 0.5, 0, 1)
+
+head(actuals_predictions)
+confusionMatrix(as.factor(actuals_predictions$prediction), as.factor(actuals_predictions$actual), positive = '1')
+
+```
+
+
+```{r, echo=FALSE}
+proc = roc(actuals_predictions$actual, actuals_predictions$prediction)
+plot(proc)
+
+```
+
+```{r, echo=FALSE}
+print(proc$auc)
+```
+
+## Third Model  
+
+
+For the 3rd model, I decided to use the variables `SEX`, AGE`, `RED_CAR`, `URBANICITY`, `CAR_TYPE`, `EDUCATION`, `KIDSDRIV`, `CAR_USE`, MSTATUS`, `MVR_PTS`, `JOB`, TIF`, and `YOJ`. Here is a summary of the model:
+
+```{r, echo=FALSE}
+reduced_model <- glm(target ~ SEX + AGE + RED_CAR + URBANICITY + CAR_TYPE + EDUCATION + KIDSDRIV + MSTATUS + MVR_PTS + CAR_USE + JOB + TIF + YOJ, data=training, family = 'binomial')
+summary(reduced_model)
+
+```  
+
+Now, let's look at how the model works with our test data. 
+
+
+```{r, echo=FALSE}
+predictionProbabilities <- predict(reduced_model, evaluation, type="response")
+
+actuals_predictions <- data.frame(cbind(actual=evaluation$target, predictedProb=predictionProbabilities))
+actuals_predictions$prediction <- ifelse(actuals_predictions$predictedProb < 0.5, 0, 1)
+
+head(actuals_predictions)
+confusionMatrix(as.factor(actuals_predictions$prediction), as.factor(actuals_predictions$actual), positive = '1')
+
+```
+
+
+```{r, echo=FALSE}
+proc = roc(actuals_predictions$actual, actuals_predictions$prediction)
+plot(proc)
+
+```
+
+```{r, echo=FALSE}
+print(proc$auc)
+```
+
+
+## Fourth Model  
+
+For the 4th model, I decided to use the variables `AGE`, `SEX`, `MSTATUS`, `CLM_FREQ`, `REVOKED`, `MVR_PTS`, `TRAVTIME`, and `CAR_USE`. Here is a summary of the model:
+
+```{r, echo=FALSE}
+
+reduced_model <- glm(target ~ AGE + SEX + MSTATUS + CLM_FREQ + REVOKED + MVR_PTS + TRAVTIME + CAR_USE, data=training, family = 'binomial')
+summary(reduced_model)
+
+```  
+
+Now, let's look at how the model works with our test data. 
+
+
+```{r, echo=FALSE}
+predictionProbabilities <- predict(reduced_model, evaluation, type="response")
+
+actuals_predictions <- data.frame(cbind(actual=evaluation$target, predictedProb=predictionProbabilities))
+actuals_predictions$prediction <- ifelse(actuals_predictions$predictedProb < 0.5, 0, 1)
+
+head(actuals_predictions)
+confusionMatrix(as.factor(actuals_predictions$prediction), as.factor(actuals_predictions$actual), positive = '1')
+
+```
+
+
+```{r, echo=FALSE}
+proc = roc(actuals_predictions$actual, actuals_predictions$prediction)
+plot(proc)
+
+```
+
+```{r, echo=FALSE}
+print(proc$auc)
+```  
+
+
+# Multiple Linear Regression  
+This section goes about attempting to establish a model for estimating the cost if a person crashes their car.  
+
+
+## First Model  
+
+This first model estimates the cost using the `BLUEBOOK`, `CAR_AGE`, `CAR_TYPE`, `CAR_USE`, and `logINCOME` variables.
+
+```{r, echo=FALSE}
+baseline_lm <- lm(TARGET_AMT ~ BLUEBOOK + CAR_AGE + CAR_TYPE + logINCOME, training)
+summary(baseline_lm)
+```
+
+Now, let's look at how the model works with our test data. 
+
+```{r, echo=FALSE}
+data.frame(yhat = predict(baseline_lm, evaluation), actual = evaluation$TARGET_AMT) %>%
+  ggplot(., aes(actual, yhat)) +
+  geom_point()
+
+```  
+
+
+
+
+## Second Model  
+
+This second model estimates the cost using the `EDUCATION`, `BLUEBOOK`, `CAR_AGE`, `CAR_TYPE`, `TRAVTIME`, `logINCOME`, and `logHOME_VAL` variables.
+
+```{r, echo=FALSE}
+second_lm <- lm(TARGET_AMT ~ EDUCATION + BLUEBOOK + CAR_AGE + CAR_TYPE + TRAVTIME + logINCOME + logHOME_VAL, training)
+summary(second_lm)
+```
+
+Now, let's look at how the model works with our test data. 
+
+```{r, echo=FALSE}
+data.frame(yhat = predict(second_lm, evaluation), actual = evaluation$TARGET_AMT) %>%
+  ggplot(., aes(actual, yhat)) +
+  geom_point()
+
+```  
+
+
+## Third Model  
+
+This third model estimates the cost using  `BLUEBOOK` + `CAR_AGE` + `TRAVTIME` variables.
+
+```{r, echo=FALSE}
+third_lm <- lm(TARGET_AMT ~ BLUEBOOK + CAR_AGE + TRAVTIME, training)
+summary(third_lm)
+```
+
+Now, let's look at how the model works with our test data. 
+
+```{r, echo=FALSE}
+data.frame(yhat = predict(third_lm, evaluation), actual = evaluation$TARGET_AMT) %>%
+  ggplot(., aes(actual, yhat)) +
+  geom_point()
+
+```  
+
+# Model Selection  
+
+For classification, the 3rd model had the best auc score. For the multiple linear regression, the 2nd model have a better $R^2$ measurement.  
+
+
+# Predictions  
+
+This section, runs the models on the evaluation data.  
+
+```{r, echo=FALSE}
+reduced_model <- glm(target ~ SEX + AGE + RED_CAR + URBANICITY + CAR_TYPE + EDUCATION + KIDSDRIV + MSTATUS + MVR_PTS + CAR_USE + JOB + TIF + YOJ, data=training, family = 'binomial')
+
+```
+
+```{r, echo=FALSE}
+predictionProbabilities <- predict(reduced_model, evaluation, type="response")
+
+actuals_predictions <- data.frame(cbind(actual=evalData$target, predictedProb=predictionProbabilities))
+actuals_predictions$prediction <- ifelse(actuals_predictions$predictedProb < 0.5, 0, 1)
+
+head(actuals_predictions)
+
+
+```
+
+
+This runs the evaluation data with the multiple linear regression model.  
+
+```{r, echo=FALSE}
+df <- data.frame(prediction = predict(second_lm, evalData), actual = evalData$TARGET_AMT)
+
+head(df)
+
+```  
 
