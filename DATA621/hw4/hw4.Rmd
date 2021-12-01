@@ -694,7 +694,7 @@ reduced_model <- glm(target ~ SEX + AGE + RED_CAR + URBANICITY + CAR_TYPE + EDUC
 ```{r, echo=FALSE}
 predictionProbabilities <- predict(reduced_model, evaluation, type="response")
 
-actuals_predictions <- data.frame(cbind(actual=evalData$target, predictedProb=predictionProbabilities))
+actuals_predictions <- data.frame(cbind(actual=evalData$TARGET, predictedProb=predictionProbabilities))
 actuals_predictions$prediction <- ifelse(actuals_predictions$predictedProb < 0.5, 0, 1)
 
 head(actuals_predictions)
