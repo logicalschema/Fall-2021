@@ -1,0 +1,169 @@
+---
+title: "Data 621 Final Project"
+author: "Sung Lee"
+date: "11/29/2021"
+output: 
+  html_document:
+    code_folding: show
+    df_print: paged
+    smooth_scroll: false
+number_sections: true
+theme: paper
+---
+
+# Abstract  
+With the rise of inflation, tangible assets like property provide the type of assets to weather economies afflicted with high inflation indices. Along with market conditions, house buyers and sellers desire the optimal value for their sales and purchases. The purpose of this paper is to examine the housing prices of King County, Washington. Is it possible to predict or at least to obtain a good estimation of a house sale with each of its inherent characteristics? Does the number of bedrooms and/or the area the house resides influence its housing price? If such hypotheses can be proven, is it possible to develop a model to predict the price of a house?  
+
+This paper will examine the house prices for King County from May 2014 to May 2015. It was obtained from Kaggle. Notable variables such as number of bedrooms and square footage will be examined to identify potential correlations with housing price. I will explore the data with R and implement multiple linear regression to determine if a model can be developed to predict housing prices. This will be done by searching for correlations and eliminating unnecessary variables. The model will be developed by splitting the data 80/20 for training and testing. 
+
+
+# Key words
+Select a few key words (up to five) related to your work.
+
+# Introduction
+Describe the background and motivation of your problem.
+
+# Literature review
+Discuss how other researchers have addressed similar problems, what their achievements are, and what the advantage and drawbacks of each reviewed approach are. Explain how your investigation is similar or different to the state-of-the- art. Please cite the relevant papers where appropriate.
+
+# Methodology
+Discuss the key aspects of your problem, data set and regression model(s). Given that you are working on real-world data, explain at a high-level your exploratory data analysis, how you prepared the data for regression modeling, your process for building regression models, and your model selection.
+
+# Experimentation and Results
+
+## Data Exploration
+
+The following are the fields provided in the original data set:  
+
+Variable| Description
+--------|-------------------
+id| Unique ID for each home sold
+date| Date of the home sale
+price| Price of each home sold
+bedrooms| Number of bedrooms
+bathrooms| Number of bathrooms, where .5 accounts for a room with a toilet but no shower
+sqft_living| Square footage of the apartments interior living space
+sqft_lot| Square footage of the land space
+floors| Number of floors
+waterfront| A dummy variable for whether the apartment was overlooking the waterfront or not
+view| An index from 0 to 4 of how good the view of the property was
+condition| An index from 1 to 5 on the condition of the apartment,
+grade| An index from 1 to 13, where 1-3 falls short of building construction and design, 7 has an average level of construction and design, and 11-13 have a high quality level of construction and design.
+sqft_above| The square footage of the interior housing space that is above ground level
+sqft_basement| The square footage of the interior housing space that is below ground level
+yr_built| The year the house was initially built
+yr_renovated| The year of the house’s last renovation
+zipcode| What zipcode area the house is in
+lat| Lattitude
+long| Longitude
+sqft_living15| The square footage of interior housing living space for the nearest 15 neighbors
+sqft_lot15| The square footage of the land lots of the nearest 15 neighbors  
+
+
+
+```{r, echo=FALSE, warning=FALSE}
+library(mice)
+library(VIM)
+library(pastecs)
+library(tidyverse)
+# https://www.rdocumentation.org/packages/naniar/versions/0.6.1
+library(naniar)
+library(reshape2)
+library(ggplot2)
+library(readr)
+library(dplyr)
+# Used for skewness
+library(moments)
+
+# Log Scale
+library(scales)
+
+# Correlation corrplot
+# https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+library(corrplot)
+
+# https://www.rdocumentation.org/packages/car/versions/3.0-11/topics/vif
+library(car)
+
+library(caret)
+library(leaps)
+library(pROC)
+```  
+
+ 
+
+```{r, echo=FALSE}
+# To help prevent scientific notation for viewed values
+options(scipen=100)
+
+# To set the number of decimal places
+options(digits=4)
+
+# From http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+
+# Reading in the csv files
+# Uncomment for Github
+# trainData <- read_csv("https://github.com/logicalschema/Fall-2021/raw/main/DATA621/hw5/wine-training-data.csv")
+trainData <- read_csv("kc_house_data.csv")
+
+
+
+# Remove the INDEX column
+trainData <- subset(trainData, select = -c(INDEX) )
+
+```  
+
+
+# Discussion and Conclusions: Conclude your findings, limitations, and suggest areas for future work.
+
+# References
+[Kaggle King County Housing Price Competition](https://www.kaggle.com/c/king-county-house-prices/overview)
+[King County Public Data](https://kingcounty.gov/services/data.aspx)
+
+# Appendix
