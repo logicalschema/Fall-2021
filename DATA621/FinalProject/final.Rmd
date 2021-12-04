@@ -17,19 +17,47 @@ With the rise of inflation, tangible assets like property provide the type of as
 This paper will examine the house prices for King County from May 2014 to May 2015. It was obtained from Kaggle. Notable variables such as number of bedrooms and square footage will be examined to identify potential correlations with housing price. I will explore the data with R and implement multiple linear regression to determine if a model can be developed to predict housing prices. This will be done by searching for correlations and eliminating unnecessary variables. The model will be developed by splitting the data 80/20 for training and testing. 
 
 
-# Key words
-Select a few key words (up to five) related to your work.
+# Key words  
+* Linear Regression  
+* Real Estate  
+* AIC  
+* Mixed Effects  
+* Housing  
 
-# Introduction
-Describe the background and motivation of your problem.
+
+# Introduction  
+![King County, Washington](https://upload.wikimedia.org/wikipedia/commons/4/4d/Kingcounty-wa.png)  
+
+
+
+In many ways, one can say that New York (aka New Amsterdam) was established as a land deal. The easy access to the sea and means for transport made the early settlement an ideal spot for commerce. Perhaps if we can look at another case study, in this case, King County, Washington, one would be able to provide better insight into purchasing property. Besides purchasing, we can also examine this case study to better understand property selling.  
+
+Mainly, my desire in pursuing this project is my interest in affordable housing. In NYC, affordable housing is difficult. There are locations where real estate is unattainable for new families all the while other communities are neglected: housing is affordable but quality of life is not ideal. Does renovating houses help a community? Can a view impact the inherent value of a house? My questions in this study would be to see if a community could be developed for the benefit of the less fortunate.
+
 
 # Literature review
-Discuss how other researchers have addressed similar problems, what their achievements are, and what the advantage and drawbacks of each reviewed approach are. Explain how your investigation is similar or different to the state-of-the- art. Please cite the relevant papers where appropriate.
 
-# Methodology
-Discuss the key aspects of your problem, data set and regression model(s). Given that you are working on real-world data, explain at a high-level your exploratory data analysis, how you prepared the data for regression modeling, your process for building regression models, and your model selection.
+To prepare for this project, I read several papers to understand real estate. The [paper](https://www.researchgate.net/publication/330572553_Analysis_of_Prices_in_the_Housing_Market_Using_Mixed_Models) by Cichulska and Cellmer examined property values using a mixed model for examining prices in Olsztyn, Poland. Their research utilized aggregation and mixed effects. I used this method to derive a better model than the traditional fixed effects method when I classified properties by their zip code.  
 
-# Experimentation and Results
+In addition, Prabhakaran's [work](https://r-statistics.co/Linear-Regression.html) on linear regression was helpful to supplement the course's materials in evaluating linear models. 
+
+Chapter 8 in *Extending the Linear Model with R* by Julian Faraway was instrumental in working on this project.
+
+
+# Methodology  
+
+The data provided is from Kaggle and was used for a competition to find a good model for predicting prices from May 2014 to May 2015. The data consisted of property prices and the conditions for the properties. King County had given each property a grade. The property had its location recorded in zip code, latitide and longitude variables. Additional variables were the year the house was built and if there was any renovation performed on the property.  
+
+The data was complete and did not have any missing values. There were noticeable patterns that would come up in the data exploration. The location of the property was a strong influence on the price of the property. Surprisingly, a waterfront view was not a indicator for price. These findings would be discovered in reviewing variable correlation coefficients.  
+
+The price to have a more normal distribution underwent a log transformation before building models. The data was then split into 2 partitions: 80% for training and 20% for evaluation. To form these partitions, the data was randomly selected. Afterwards, 5 models were constructed by looking at correlation coefficients and using fixed effects and mixed effects models.  
+
+The efficacy of the model was selected by comparing the min-max accuracy, mean absolute percentage error (MAPE), Akaike information criterion (AIC), the $R^2$ and the adjusted $R^2$ for each model.
+
+# Experimentation and Results  
+
+After exploring the data and looking at the distributions, 5 models were constructed and compared. The fifth model was selected because of its scores. This model was a linear model that used `zip code` as a factor and latitude. Surprisingly, the latitude of a housing property had a powerful impact on the price of a property.
+
 
 ## Data Exploration
 
@@ -62,6 +90,9 @@ sqft_lot15| The square footage of the land lots of the nearest 15 neighbors
 
 
 ```{r, echo=FALSE, warning=FALSE}
+library(nlme)
+library(rsq)
+library(Hmisc)
 library(mice)
 library(VIM)
 library(pastecs)
@@ -93,11 +124,12 @@ library(pROC)
  
 
 ```{r, echo=FALSE}
-# To help prevent scientific notation for viewed values
-options(scipen=100)
 
-# To set the number of decimal places
-options(digits=4)
+backup_options <- options()
+
+# To help prevent scientific notation for viewed values
+#options(scipen=100, digits=4)
+
 
 # From http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
 # Multiple plot function
@@ -155,15 +187,805 @@ trainData <- read_csv("kc_house_data.csv")
 
 
 # Remove the INDEX column
-trainData <- subset(trainData, select = -c(INDEX) )
+trainData <- subset(trainData, select = -c(id) )
 
 ```  
 
+Here is an initial view of the data:
 
-# Discussion and Conclusions: Conclude your findings, limitations, and suggest areas for future work.
+```{r, echo=FALSE}
+head(trainData)
+```
 
-# References
-[Kaggle King County Housing Price Competition](https://www.kaggle.com/c/king-county-house-prices/overview)
-[King County Public Data](https://kingcounty.gov/services/data.aspx)
+Here is a summary of the data:
 
-# Appendix
+```{r, echo=FALSE}
+summary(trainData)
+```  
+
+The data from Kaggle does not have any missing values. There are `r nrow(trainData)` total observations.  
+
+The following is a frequency chart of the `price` variable.
+
+```{r, echo=FALSE}
+options(scipen=100, digits=4)
+
+
+price_plot = ggplot(data = trainData, aes(x = price)) + 
+  geom_histogram(fill="dodgerblue", color="#e9ecef", alpha=0.9) +
+  theme_classic() + # white background, no gridlines
+  xlab('Price (US$)') + # change x axis label
+  ylab('Frequency') # change y axis label
+
+
+png(file="images/price_plot.png")
+price_plot
+dev.off()
+```  
+
+The following is a frequency chart of the `yr_built` variable.
+
+```{r, echo=FALSE}
+options(scipen=100, digits=4)
+
+
+yr_built_plot = ggplot(data = trainData, aes(x = yr_built)) + 
+  geom_histogram(fill="dodgerblue", color="#e9ecef", alpha=0.9) +
+  theme_classic() + # white background, no gridlines
+  xlab('Year Built') + # change x axis label
+  ylab('Frequency') # change y axis label
+
+png(file="images/yr_built_plot.png")
+yr_built_plot
+dev.off()
+```  
+
+The following is a frequency chart of the `floors` variable.
+
+```{r, echo=FALSE}
+options(backup_options)
+
+floors_plot = ggplot(data = trainData, aes(x = floors)) + 
+  geom_histogram(fill="dodgerblue", color="#e9ecef", alpha=0.9) +
+  theme_classic() + # white background, no gridlines
+  xlab('Floors') + # change x axis label
+  ylab('Frequency') # change y axis label
+
+png(file="images/floors_plot.png")
+floors_plot
+dev.off()
+```  
+
+
+The following are the unique values for the `zipcode` variable. 
+
+```{r, echo=FALSE}
+plyr::count(trainData, 'zipcode')
+```
+
+There are 70 unique values for zipcode.
+
+
+The following is a boxplot of the `waterfront` and `price` variables.
+
+```{r, echo=FALSE}
+options(scipen=100, digits=4)
+
+boxplot1 <- ggplot(trainData) + 
+  aes(y = price, x = as.factor(waterfront)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("waterfront")
+
+png(file="images/waterfront_boxplot_plot.png")
+boxplot1
+dev.off()
+
+```  
+
+The following is a scatterplot of the `sqft_above` and `price` variables with a linear regression line to see if there is a correlation between them.
+
+```{r, echo=FALSE}
+
+png(file="images/sqft_above_v_price_plot.png")
+ggplot(trainData, aes(x=sqft_above, y=price)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
+dev.off()
+
+cor.test(trainData$sqft_above, trainData$price, method="pearson")
+```  
+
+The following is a scatterplot of the `sqft_living` and `price` variables with a linear regression line to see if there is a correlation between them.
+
+```{r, echo=FALSE}
+
+png(file="images/sqftliving_v_price.png")
+ggplot(trainData, aes(x=sqft_living, y=price)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+dev.off()
+
+cor.test(trainData$sqft_above, trainData$price, method="pearson")
+```  
+
+Looking at the Pearson correlation `cor.test` for `sqft_above` and `price`:  
+
+$H_0$: There is no correlation between the two variables: p = 0  
+$H_a$: There is a nonzero correlation between the two variables $p \ne 0$  
+
+From the Pearson correlation above, there is a statistical significance. Because the Pearson Correlation Coefficient (r) is 0.6056, t = 112, and p = $2 × 10^{-16}$, we reject the null hypothesis. Looking at the 95% confidence interval, it does not contain 0.
+
+
+The following is a scatterplot of the `sqft_living` and `price` variables with a linear regression line to see if there is a correlation between them.
+
+```{r, echo=FALSE}
+
+png(file="images/sqft_living_v_price.png")
+
+ggplot(trainData, aes(x=sqft_living, y=price)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
+dev.off()
+
+cor.test(trainData$sqft_above, trainData$price, method="pearson")
+```  
+
+The following is a correlation matrix of the numeric variables.
+
+```{r, echo=FALSE}
+options(backup_options)
+
+# cor(mtcars[-1], mtcars$mpg) 
+
+corrTrain <- cor(trainData[sapply(trainData, is.numeric)] )
+
+
+png(file="images/corrplot.png")
+corrplot(corrTrain, order = "hclust")
+dev.off()
+```  
+
+The following are the variables paired with `price` and sorted from largest to smallest.  
+
+```{r, echo=FALSE}
+correlations <- cor(trainData[sapply(trainData, is.numeric)], trainData$price )
+```
+
+Variable | Correlation
+------|------------------
+price|1
+sqft_living|0.70204
+grade|0.66743
+sqft_above|0.60557
+sqft_living15|0.58538
+bathrooms|0.52514
+view|0.39729
+sqft_basement|0.32382
+bedrooms|0.30835
+lat|0.307
+waterfront|0.26637
+floors|0.25679
+yr_renovated|0.12643
+sqft_lot|0.08966
+sqft_lot15|0.08245
+yr_built|0.05401
+condition|0.03636
+long|0.02163
+zipcode|-0.0532
+
+
+
+# Data Preparation  
+
+For the data set, I will only do a log transform for the variable `price` and then split the data 80/20. One set will be for training and the other for evaluation. What follows is a snippet of the data.
+
+```{r, echo=FALSE}
+trainData$price <- log(trainData$price)
+
+
+set.seed(1201)
+trainIndex <- createDataPartition(trainData$price, p = 0.8, 
+                                  list = FALSE)
+
+training <- trainData[trainIndex, ]
+evaluation <- trainData[-trainIndex, ]
+
+head(training)
+head(evaluation)
+```  
+
+
+## Boxplots  
+
+The following is a plot of the boxplots for the variables:  
+
+
+```{r, echo=FALSE}
+p1 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(bedrooms)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("bedrooms")
+
+
+p5 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(floors)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("floors")
+
+p6 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(view)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("view")
+
+p7 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(condition)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("condition")
+
+p8 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(grade)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("grade")
+
+
+
+png(file="images/multiplot_boxplot.png")
+
+multiplot(p1, p5, p6, p7, p8, cols=2)
+
+dev.off()
+```
+
+
+# Models 
+
+The first model is a kitchen sink of all the variables.
+
+## First Model  
+```{r, echo=FALSE}
+
+model1 <- lm(price~ .,data=training)
+summary(model1)
+
+png(file="images/model1.png")
+
+plot(model1, 2)
+dev.off()
+
+aic1 <- AIC(model1)
+
+```
+
+The AIC for this model is `r aic1`.
+
+
+### Evaluation  
+
+
+```{r, echo=FALSE}
+predictions <- predict(model1, evaluation)
+
+
+actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)
+```
+
+
+```{r, echo=FALSE}
+min_max_accuracy1 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape1 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)   
+
+```
+
+The Min Max accuracy is `r min_max_accuracy1`.  
+The MAPE is `r mape1`.
+
+
+
+
+## Second Model  
+
+This second model uses the amount of space, the number of bedrooms and bathrooms, and the `zipcode` is used as a factor variable.
+
+```{r, echo=FALSE}
+model2 <- lm(price~ bedrooms + bathrooms + sqft_living + sqft_living15 + floors + condition + grade + sqft_above + as.factor(zipcode),data=training)
+summary(model2)
+
+png(file="images/model2.png")
+plot(model2, 2)
+dev.off()
+
+aic2 <- AIC(model2)
+
+```
+
+The AIC for this model is `r aic2`.
+
+
+### Evaluation  
+
+
+```{r, echo=FALSE}
+predictions <- predict(model2, evaluation)
+
+
+actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)
+```
+
+
+```{r, echo=FALSE}
+min_max_accuracy2 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape2 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)   
+
+```
+
+The Min Max accuracy is `r min_max_accuracy2`.  
+The MAPE is `r mape2`.
+
+
+
+## Third Model  
+
+This third model uses `bathrooms`, `sqft_living15`, `sqft_above`, `grade`, and `sqft_living`.
+
+```{r, echo=FALSE}
+model3 <- lm(price~ bathrooms + sqft_living15 + sqft_above + grade + sqft_living,data=training)
+summary(model3)
+
+png(file="images/model3.png")
+
+plot(model3, 2)
+dev.off()
+
+aic3 <- AIC(model3)
+
+```
+
+The AIC for this model is `r aic3`.
+
+
+### Evaluation  
+
+
+```{r, echo=FALSE}
+predictions <- predict(model3, evaluation)
+
+
+actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)
+```
+
+
+```{r, echo=FALSE}
+min_max_accuracy3 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape3 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)   
+
+```
+
+The Min Max accuracy is `r min_max_accuracy3`.  
+The MAPE is `r mape3`.
+
+## Fourth Model  
+
+This fourth model uses `bathrooms`, `sqft_living15`, `sqft_above`, `grade`, and `sqft_living`.
+
+```{r, echo=FALSE}
+model4 <- lme(price~ bathrooms + sqft_living15 + sqft_above + grade + sqft_living,data=training, random=~1|zipcode)
+summary(model4)
+
+r_2 <- rsq(model4)
+r_2adj <- rsq.lmm(model4, adj=TRUE)
+
+aic4 <- AIC(model4)
+
+png(file="images/model4.png")
+qqnorm(resid(model4))
+qqline(resid(model4))
+dev.off()
+
+```  
+
+The AIC for this model is `r aic4`.  
+The $R^2$ is `r r_2$model`.  
+The Adjusted $R^2$ is `r r_2adj$model`.  
+
+
+### Evaluation  
+
+
+```{r, echo=FALSE}
+predictions <- predict(model4, evaluation)
+
+
+actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)
+```
+
+
+```{r, echo=FALSE}
+min_max_accuracy4 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape4 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)  
+
+
+```
+
+The Min Max accuracy is `r min_max_accuracy4`.  
+The MAPE is `r mape4`.
+
+
+
+## Fifth Model  
+
+This second model uses the amount of space, the number of bedrooms and bathrooms, and the `zipcode` is used as a factor variable.
+
+```{r, echo=FALSE}
+model5 <- lm(price~ lat+ long+ bedrooms + bathrooms + sqft_living + sqft_living15 + floors + condition + grade + sqft_above + as.factor(zipcode),data=training)
+summary(model5)
+
+png(file="images/model5.png")
+plot(model5, 2)
+dev.off()
+
+aic5 <- AIC(model5)
+
+```
+
+The AIC for this model is `r aic5`.
+
+
+### Evaluation  
+
+
+```{r, echo=FALSE}
+predictions <- predict(model5, evaluation)
+
+
+actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)
+```
+
+
+```{r, echo=FALSE}
+min_max_accuracy5 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape5 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)   
+
+options(scipen=100, digits=6)
+
+```
+
+The Min Max accuracy is `r min_max_accuracy2`.  
+The MAPE is `r mape5`.
+
+
+# Selection of Model  
+
+Name             |Min Max Accuracy|MAPE|AIC    |$R^2$|Adjusted $R^2$
+-----------------|----------------|----|-------|-----|-----------------  
+Model 1 |`r min_max_accuracy1` | `r mape1`| `r aic1`| `r summary(model1)$r.squared`|`r summary(model1)$adj.r.squared`  
+Model 2 |`r min_max_accuracy2` | `r mape2`| `r aic2`| `r summary(model2)$r.squared`|`r summary(model2)$adj.r.squared`  
+Model 3 |`r min_max_accuracy3` | `r mape3`| `r aic3`| `r summary(model3)$r.squared`|`r summary(model3)$adj.r.squared`  
+Model 4 |`r min_max_accuracy4` | `r mape4`| `r aic4`| `r r_2$model`|`r r_2adj$model`  
+Model 5 |`r min_max_accuracy5` | `r mape5`| `r aic5`| `r summary(model5)$r.squared`|`r summary(model5)$adj.r.squared`  
+
+
+
+# Discussion and Conclusions  
+
+The mixed effects model provided a powerful model to predict the pricing values of the properties. Zip code and latitude were pivotal in constructing optimized models for King County, Washington. However, the fixed effects model would win in the comparisons. 
+
+The findings do indicate the impact of the northern part of King County and leads to supporting the mantra of "location, location, location" for property values. Seattle is in the north and presumably impacts property values. The location has a profound impact on value, but further research would be needed to see if investment in communities would provide necessary value over time.
+
+For future studies, additional variables can be added such as proximity to a major city and additional data would be necessary to compare property values over time. May 2014 to May 2015 there were not any presumed recessions so perhaps additional research can be done on the impact of recessions and in our recent day inflation has on property values.
+
+
+# References  
+
+Faraway, Julian James. “Random Effects.” Extending Linear Models with R, Chapman &amp; Hall/CRC, Boca Raton, FL, 2006.  
+
+[Selva Prabhakaran's Tutorial on Linear Regression](https://r-statistics.co/Linear-Regression.html)  
+
+[Analysis of Prices in the Housing Market Using Mixed Models](https://www.researchgate.net/publication/330572553_Analysis_of_Prices_in_the_Housing_Market_Using_Mixed_Models)  
+
+[Kaggle King County Housing Price Competition](https://www.kaggle.com/c/king-county-house-prices/overview)  
+
+[King County Public Data](https://kingcounty.gov/services/data.aspx)  
+
+
+# Appendix  
+
+```{r, eval=FALSE}
+
+library(nlme)
+library(rsq)
+library(Hmisc)
+library(mice)
+library(VIM)
+library(pastecs)
+library(tidyverse)
+# https://www.rdocumentation.org/packages/naniar/versions/0.6.1
+library(naniar)
+library(reshape2)
+library(ggplot2)
+library(readr)
+library(dplyr)
+# Used for skewness
+library(moments)
+
+# Log Scale
+library(scales)
+
+# Correlation corrplot
+# https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+library(corrplot)
+
+# https://www.rdocumentation.org/packages/car/versions/3.0-11/topics/vif
+library(car)
+
+library(caret)
+library(leaps)
+library(pROC)
+  backup_options <- options()
+
+# To help prevent scientific notation for viewed values
+#options(scipen=100, digits=4)# From http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}# Reading in the csv files
+# Uncomment for Github
+# trainData <- read_csv("https://github.com/logicalschema/Fall-2021/raw/main/DATA621/hw5/wine-training-data.csv")
+trainData <- read_csv("kc_house_data.csv")
+# Remove the INDEX column
+trainData <- subset(trainData, select = -c(id) )
+
+  
+
+head(trainData)summary(trainData)
+  
+
+options(scipen=100, digits=4)price_plot = ggplot(data = trainData, aes(x = price)) + 
+  geom_histogram(fill="dodgerblue", color="#e9ecef", alpha=0.9) +
+  theme_classic() + # white background, no gridlines
+  xlab('Price (US$)') + # change x axis label
+  ylab('Frequency') # change y axis labelpng(file="images/price_plot.png")
+price_plot
+dev.off()
+  
+
+options(scipen=100, digits=4)yr_built_plot = ggplot(data = trainData, aes(x = yr_built)) + 
+  geom_histogram(fill="dodgerblue", color="#e9ecef", alpha=0.9) +
+  theme_classic() + # white background, no gridlines
+  xlab('Year Built') + # change x axis label
+  ylab('Frequency') # change y axis label
+
+png(file="images/yr_built_plot.png")
+yr_built_plot
+dev.off()
+  
+
+options(backup_options)
+
+floors_plot = ggplot(data = trainData, aes(x = floors)) + 
+  geom_histogram(fill="dodgerblue", color="#e9ecef", alpha=0.9) +
+  theme_classic() + # white background, no gridlines
+  xlab('Floors') + # change x axis label
+  ylab('Frequency') # change y axis label
+
+png(file="images/floors_plot.png")
+floors_plot
+dev.off()
+  
+
+plyr::count(trainData, 'zipcode')options(scipen=100, digits=4)
+
+boxplot1 <- ggplot(trainData) + 
+  aes(y = price, x = as.factor(waterfront)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("waterfront")
+
+png(file="images/waterfront_boxplot_plot.png")
+boxplot1
+dev.off()
+
+  png(file="images/sqft_above_v_price_plot.png")
+ggplot(trainData, aes(x=sqft_above, y=price)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
+dev.off()
+
+cor.test(trainData$sqft_above, trainData$price, method="pearson")
+  png(file="images/sqftliving_v_price.png")
+ggplot(trainData, aes(x=sqft_living, y=price)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+dev.off()
+
+cor.test(trainData$sqft_above, trainData$price, method="pearson")
+  png(file="images/sqft_living_v_price.png")
+
+ggplot(trainData, aes(x=sqft_living, y=price)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
+dev.off()
+
+cor.test(trainData$sqft_above, trainData$price, method="pearson")
+  
+
+options(backup_options)
+
+# cor(mtcars[-1], mtcars$mpg) 
+
+corrTrain <- cor(trainData[sapply(trainData, is.numeric)] )png(file="images/corrplot.png")
+corrplot(corrTrain, order = "hclust")
+dev.off()
+  
+
+correlations <- cor(trainData[sapply(trainData, is.numeric)], trainData$price )trainData$price <- log(trainData$price)set.seed(1201)
+trainIndex <- createDataPartition(trainData$price, p = 0.8, 
+                                  list = FALSE)
+
+training <- trainData[trainIndex, ]
+evaluation <- trainData[-trainIndex, ]
+
+head(training)
+head(evaluation)
+  
+
+p1 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(bedrooms)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("bedrooms")p5 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(floors)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("floors")
+
+p6 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(view)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("view")
+
+p7 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(condition)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("condition")
+
+p8 <- ggplot(trainData) + 
+  aes(y =price, x = as.factor(grade)) +
+  geom_boxplot(fill="dodgerblue", alpha=0.3) +
+  theme_minimal() + xlab("grade")
+png(file="images/multiplot_boxplot.png")
+
+multiplot(p1, p5, p6, p7, p8, cols=2)
+
+dev.off()
+model1 <- lm(price~ .,data=training)
+summary(model1)
+
+png(file="images/model1.png")
+
+plot(model1, 2)
+dev.off()
+
+aic1 <- AIC(model1)
+predictions <- predict(model1, evaluation)actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)min_max_accuracy1 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape1 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)   
+model2 <- lm(price~ bedrooms + bathrooms + sqft_living + sqft_living15 + floors + condition + grade + sqft_above + as.factor(zipcode),data=training)
+summary(model2)
+
+png(file="images/model2.png")
+plot(model2, 2)
+dev.off()
+
+aic2 <- AIC(model2)
+predictions <- predict(model2, evaluation)actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)min_max_accuracy2 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape2 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)   
+model3 <- lm(price~ bathrooms + sqft_living15 + sqft_above + grade + sqft_living,data=training)
+summary(model3)
+
+png(file="images/model3.png")
+
+plot(model3, 2)
+dev.off()
+
+aic3 <- AIC(model3)
+predictions <- predict(model3, evaluation)actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)min_max_accuracy3 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape3 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)   
+model4 <- lme(price~ bathrooms + sqft_living15 + sqft_above + grade + sqft_living,data=training, random=~1|zipcode)
+summary(model4)
+
+r_2 <- rsq(model4)
+r_2adj <- rsq.lmm(model4, adj=TRUE)
+
+aic4 <- AIC(model4)
+
+png(file="images/model4.png")
+qqnorm(resid(model4))
+qqline(resid(model4))
+dev.off()
+
+
+predictions <- predict(model4, evaluation)actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)min_max_accuracy4 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape4 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)  
+
+model5 <- lm(price~ lat+ long+ bedrooms + bathrooms + sqft_living + sqft_living15 + floors + condition + grade + sqft_above + 
+as.factor(zipcode),data=training)
+summary(model5)
+
+png(file="images/model5.png")
+plot(model5, 2)
+dev.off()
+
+aic5 <- AIC(model5)
+predictions <- predict(model5, evaluation)actuals_preds <- data.frame(cbind(actual=evaluation$price, predicted=predictions))  # make actuals_predicteds dataframe.
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)min_max_accuracy5 <- mean(apply(actuals_preds, 1, min) / apply(actuals_preds, 1, max))  
+mape5 <- mean(abs((actuals_preds$predicted - actuals_preds$actual))/actuals_preds$actual)   
+
+options(scipen=100, digits=6)
+
+```
