@@ -514,14 +514,14 @@ pre code {
 <pre><code>## 
 ##  Pearson&#39;s product-moment correlation
 ## 
-## data:  trainData$sqft_above and trainData$price
-## t = 112, df = 21611, p-value &lt;0.0000000000000002
+## data:  trainData$sqft_living and trainData$price
+## t = 145, df = 21611, p-value &lt;0.0000000000000002
 ## alternative hypothesis: true correlation is not equal to 0
 ## 95 percent confidence interval:
-##  0.5971 0.6139
+##  0.6952 0.7087
 ## sample estimates:
-##    cor 
-## 0.6056</code></pre>
+##   cor 
+## 0.702</code></pre>
 <p>Looking at the Pearson correlation <code>cor.test</code> for <code>sqft_above</code> and <code>price</code>:</p>
 <p><span class="math inline">\(H_0\)</span>: There is no correlation between the two variables: p = 0<br />
 <span class="math inline">\(H_a\)</span>: There is a nonzero correlation between the two variables <span class="math inline">\(p \ne 0\)</span></p>
@@ -1181,9 +1181,9 @@ multiplot &lt;- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }# Reading in the csv files
-# Uncomment for Github
-# trainData &lt;- read_csv(&quot;https://github.com/logicalschema/Fall-2021/raw/main/DATA621/hw5/wine-training-data.csv&quot;)
-trainData &lt;- read_csv(&quot;kc_house_data.csv&quot;)
+
+trainData &lt;- read_csv(&quot;https://github.com/logicalschema/Fall-2021/raw/main/DATA621/FinalProject/kc_house_data.csv.gz&quot;)
+
 # Remove the INDEX column
 trainData &lt;- subset(trainData, select = -c(id) )
 
@@ -1245,14 +1245,14 @@ ggplot(trainData, aes(x=sqft_above, y=price)) +
 dev.off()
 
 cor.test(trainData$sqft_above, trainData$price, method=&quot;pearson&quot;)
-  png(file=&quot;images/sqftliving_v_price.png&quot;)
+  png(file=&quot;images/sqftabove_v_price.png&quot;)
 ggplot(trainData, aes(x=sqft_living, y=price)) +
     geom_point(shape=1) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don&#39;t add shaded confidence region
 dev.off()
 
-cor.test(trainData$sqft_above, trainData$price, method=&quot;pearson&quot;)
+cor.test(trainData$sqft_living, trainData$price, method=&quot;pearson&quot;)
   png(file=&quot;images/sqft_living_v_price.png&quot;)
 
 ggplot(trainData, aes(x=sqft_living, y=price)) +
@@ -1262,7 +1262,7 @@ ggplot(trainData, aes(x=sqft_living, y=price)) +
 
 dev.off()
 
-cor.test(trainData$sqft_above, trainData$price, method=&quot;pearson&quot;)
+cor.test(trainData$sqft_living, trainData$price, method=&quot;pearson&quot;)
   
 
 options(backup_options)

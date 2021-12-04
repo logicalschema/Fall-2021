@@ -180,9 +180,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 
 # Reading in the csv files
-# Uncomment for Github
-# trainData <- read_csv("https://github.com/logicalschema/Fall-2021/raw/main/DATA621/hw5/wine-training-data.csv")
-trainData <- read_csv("kc_house_data.csv")
+trainData <- read_csv("https://github.com/logicalschema/Fall-2021/raw/main/DATA621/FinalProject/kc_house_data.csv.gz")
 
 
 
@@ -308,7 +306,7 @@ ggplot(trainData, aes(x=sqft_living, y=price)) +
                 se=FALSE)    # Don't add shaded confidence region
 dev.off()
 
-cor.test(trainData$sqft_above, trainData$price, method="pearson")
+cor.test(trainData$sqft_living, trainData$price, method="pearson")
 ```  
 
 Looking at the Pearson correlation `cor.test` for `sqft_above` and `price`:  
@@ -691,7 +689,7 @@ For future studies, additional variables can be added such as proximity to a maj
 
 # References  
 
-Faraway, Julian James. “Random Effects.” Extending Linear Models with R, Chapman &amp; Hall/CRC, Boca Raton, FL, 2006.  
+Faraway, Julian James. "Random Effects." Extending Linear Models with R, Chapman &amp; Hall/CRC, Boca Raton, FL, 2006.  
 
 [Selva Prabhakaran's Tutorial on Linear Regression](https://r-statistics.co/Linear-Regression.html)  
 
@@ -784,9 +782,9 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }# Reading in the csv files
-# Uncomment for Github
-# trainData <- read_csv("https://github.com/logicalschema/Fall-2021/raw/main/DATA621/hw5/wine-training-data.csv")
-trainData <- read_csv("kc_house_data.csv")
+
+trainData <- read_csv("https://github.com/logicalschema/Fall-2021/raw/main/DATA621/FinalProject/kc_house_data.csv.gz")
+
 # Remove the INDEX column
 trainData <- subset(trainData, select = -c(id) )
 
@@ -848,14 +846,14 @@ ggplot(trainData, aes(x=sqft_above, y=price)) +
 dev.off()
 
 cor.test(trainData$sqft_above, trainData$price, method="pearson")
-  png(file="images/sqftliving_v_price.png")
+  png(file="images/sqftabove_v_price.png")
 ggplot(trainData, aes(x=sqft_living, y=price)) +
     geom_point(shape=1) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 dev.off()
 
-cor.test(trainData$sqft_above, trainData$price, method="pearson")
+cor.test(trainData$sqft_living, trainData$price, method="pearson")
   png(file="images/sqft_living_v_price.png")
 
 ggplot(trainData, aes(x=sqft_living, y=price)) +
@@ -865,7 +863,7 @@ ggplot(trainData, aes(x=sqft_living, y=price)) +
 
 dev.off()
 
-cor.test(trainData$sqft_above, trainData$price, method="pearson")
+cor.test(trainData$sqft_living, trainData$price, method="pearson")
   
 
 options(backup_options)
