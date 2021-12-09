@@ -1,80 +1,147 @@
 import json
 import gzip
-
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output, State
 import pandas as pd
 import plotly.express as px
 
 
-# https://data.cityofnewyork.us/Business/Zip-Code-Boundaries/i8iw-xf4u
-# https://plotly.com/python/choropleth-maps/
-# https://api.census.gov/data/2019/acs/acs5/variables.html
-# https://www.joshuastevens.net/cartography/make-a-bivariate-choropleth-map/
+# app initialize
+dash_app = dash.Dash(
+    __name__,
+    meta_tags=[
+        {"name": "viewport", "content": "width=device-width, initial-scale=1.0"}
+    ],
+)
 
-# B02001_001E TOTAL Population 
-# B02008_001E WHITE ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
-# B02009_001E BLACK OR AFRICAN AMERICAN ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
-# B02010_001E AMERICAN INDIAN AND ALASKA NATIVE ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
-# B02011_001E ASIAN ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
-# B02012_001E NATIVE HAWAIIAN AND OTHER PACIFIC ISLANDER ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
-# B02013_001E SOME OTHER RACE ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
-# B03001_002E Not HISPANIC OR LATINO ORIGIN BY SPECIFIC ORIGIN
-# B03001_003E HISPANIC OR LATINO ORIGIN BY SPECIFIC ORIGIN
-
-# Classes and color
-# A3: #be64ac B3: #8c62aa   C3: #3b4994
-# A2: #dfb0d6 B2: #a5add3   C2: #5698b9
-# A1: #e8e8e8 B1: #ace4e4 C1: #5ac8c8
-
-colormap = {
-    'A1': '#e8e8e8', 'B1': '#ace4e4', 'C1': '#5ac8c8',
-    'A2': '#dfb0d6', 'B2': '#a5add3', 'C2': '#5698b9',
-    'A3': '#be64ac', 'B3': '#8c62aa', 'C3': '#3b4994'
-}
-
-with gzip.open('nyc_zip.json.gz', 'rb') as f:
-    mapdata = json.load(f)
+app = dash_app.server
+dash_app.config["suppress_callback_exceptions"] = True
 
 
-df = pd.read_csv("combined_final.csv",
-                   dtype={"zip": str, "percentage": float,
-                          "tobacco": int, "alcohol": int,
-                          "B02001_001E": int, "B02008_001E": int,
-                          "B02009_001E": int, "B02010_001E": int,
-                          "B02011_001E": int, "B02012_001E": int,
-                          "B02013_001E": int, "B03001_002E": int,
-                          "B03001_003E": int
-                })
+
+def build_banner():
+   return html.Div(
+      id="banner",
+      className="banner",
+      children=[
+        html.Img(src=dash_app.get_asset_url("cunysps_2021_2linelogo_spsblue_1.png"), style={'height':'75%', 'width':'75%'}),
+        html.H6("NYC Tobacco and Alcohol Licenses 2019"),
+        ],
+    )
+
+def build_graph_title(title):
+   return html.P(className="graph-title", children=title)
 
 
-# Setup the classifications for tobacco and alcohol numbers
-tobaccoLabels = ['A', 'B', "C"]
-df['tobacco_classification'] = pd.qcut(df['tobacco'], 3, labels = tobaccoLabels)
-alcoholLabels = ['1', '2', '3']
-df['alcohol_classification'] = pd.qcut(df['alcohol'], 3, labels = alcoholLabels)
-df['class'] = df['tobacco_classification'].astype(str) + df['alcohol_classification'].astype(str)
+dash_app.layout = html.Div(
+  children=[ 
+    html.Div(
+        id="top-row",
+        children=[
+            html.Div(
+               className="row",
+               id="top-row-header",
+               children=[
+                  html.Div(
+                     className="column",
+                     id="header-container",
+                     children=[
+                         build_banner(),
+                         html.P(
+                            id="instructions",
+                            children=["Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."]
+                         ),
+                         build_graph_title("Species"),
+                         dcc.Dropdown(
+                           id="spc-dropdown",
+                           options=[
+                               {"label": i, "value": i} for i in spc
+                           ],
+                           multi=True,
+                           value=[spc[0], spc[1], spc[52]],
+                           ),
+                         build_graph_title("Borough(s)"),
+                         dcc.Dropdown(
+                           id="borough-dropdown",
+                           options=[
+                               {"label": i, "value": i} for i in boro
+                           ],
+                           multi=True,
+                           value=[boro[0], boro[1], boro[2], boro[3], boro[4]]
+                           ),
+                         build_graph_title("Steward(s)"),
+                         dcc.Slider(
+                           id="steward-slider",
+                           min=0,
+                           max=3,
+                           step=None,
+                           marks={
+                               # 'None' '1or2' '3or4' '4orMore'
+                               0: 'None',
+                               1: '1 or 2',
+                               2: '3 or 4',
+                               3: '4 or More'
+                           },
+                           value=3
+                           )
 
+                   ]
+                  ),
+                  html.Div(
+                     className="column",
+                     id="top-row-graphs",
+                     children=[
 
-# Setup hover text
-df['Information'] = 'Tobacco Licenses: ' + df['tobacco'].astype(str) + '<br>' + \
-    'Alcohol Licenses: ' + df['alcohol'].astype(str) + '<br>' + \
-    'Population: ' + df['B02001_001E'].astype(str) + '<br>' + \
-    'Persons Below Poverty Line: ' + df['percentage'].astype(str) + '% <br>'
+                          html.Div(
+                            id="map",
+                            className="row",
+                            children=[
+                            # dcc Graph here
+                               dcc.Graph(id='map-graph')
+                            ]
 
-fig = px.choropleth_mapbox(df, geojson=mapdata, locations='zip', 
-                           color="class", 
-                           color_discrete_map=colormap, 
-                           category_orders={"class": ['C3', 'B3', 'A3', 'C2', 'B2', 'A2', 'C1', 'B1', 'A1']},
-                           featureidkey="properties.ZIP",
-                           color_continuous_scale="Viridis",
-                           range_color=(0, 75),
-                           mapbox_style="carto-positron",
-                           zoom=10, center = {"lat": 40.70229736498986, "lon": -74.01581689028704},
-                           opacity=0.5,
-                           labels={'zip':'Zipcode'},
-                           hover_name=df['zip'],
-                           hover_data=["Information"]
                           )
+                     ]
+                  ),
+               ]
+            ),
+          ]
+    ),
+    html.Div(
+      id="bottom-row",
+      children=[
+          html.Div(
+              className="bottom-row",
+              id="bottom-row-header",
+              children=[
+                  html.Div(
+                     className="column",
+                     id="form-bar-container",
+                     children=[
+                         build_graph_title("Tree Health and Stewardship"),
+                         dcc.Graph(id='form-bar-graph'),
+                     ]
+                     ),
+                  html.Div(
+                     className="column",
+                     id="form-text-container",
+                     children=[
+                         html.P(
+                            id="lower-text-box"                         ),
+                     ],
+                  ),
+              ]
+              )
+      ]
+      )
+])
 
-fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
-fig.show()
+
+
+# Running the server
+if __name__ == "__main__":
+    dash_app.run_server(debug=True)
+
