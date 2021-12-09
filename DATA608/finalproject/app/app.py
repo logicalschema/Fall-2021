@@ -56,7 +56,7 @@ df['class'] = df['tobacco_classification'].astype(str) + df['alcohol_classificat
 # Setup hover text
 df['Information'] = 'Tobacco Licenses: ' + df['tobacco'].astype(str) + '<br>' + \
     'Alcohol Licenses: ' + df['alcohol'].astype(str) + '<br>' + \
-    'Percentage Below Poverty: ' + df['percentage'].astype(str) + '% <br>'
+    'Persons Below Poverty Line: ' + df['percentage'].astype(str) + '% <br>'
 
 fig = px.choropleth_mapbox(df, geojson=mapdata, locations='zip', 
                            color="class", 
