@@ -25,9 +25,9 @@ import plotly.express as px
 # A1: #e8e8e8 B1: #ace4e4 C1: #5ac8c8
 
 colormap = {
-    'A3': '#be64ac', 'B3': '#8c62aa', 'C3': '#3b4994', 
+    'A1': '#e8e8e8', 'B1': '#ace4e4', 'C1': '#5ac8c8',
     'A2': '#dfb0d6', 'B2': '#a5add3', 'C2': '#5698b9',
-    'A1': '#e8e8e8', 'B1': '#ace4e4', 'C1': '#5ac8c8'
+    'A3': '#be64ac', 'B3': '#8c62aa', 'C3': '#3b4994'
 }
 
 with gzip.open('nyc_zip.json.gz', 'rb') as f:
@@ -53,9 +53,15 @@ df['alcohol_classification'] = pd.qcut(df['alcohol'], 3, labels = alcoholLabels)
 df['class'] = df['tobacco_classification'].astype(str) + df['alcohol_classification'].astype(str)
 
 
+# Setup hover text
+df['Information'] = 'Tobacco Licenses: ' + df['tobacco'].astype(str) + '<br>' + \
+    'Alcohol Licenses: ' + df['alcohol'].astype(str) + '<br>' + \
+    'Percentage Below Poverty: ' + df['percentage'].astype(str) + '% <br>'
+
 fig = px.choropleth_mapbox(df, geojson=mapdata, locations='zip', 
                            color="class", 
                            color_discrete_map=colormap, 
+                           category_orders={"class": ['C3', 'B3', 'A3', 'C2', 'B2', 'A2', 'C1', 'B1', 'A1']},
                            featureidkey="properties.ZIP",
                            color_continuous_scale="Viridis",
                            range_color=(0, 75),
@@ -63,8 +69,10 @@ fig = px.choropleth_mapbox(df, geojson=mapdata, locations='zip',
                            zoom=10, center = {"lat": 40.70229736498986, "lon": -74.01581689028704},
                            opacity=0.5,
                            labels={'zip':'Zipcode'},
-                           hover_data=["percentage", "tobacco", "alcohol"],
+                           hover_name=df['zip'],
+                           hover_data=["Information"]
                           )
+
 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
 fig.show()
