@@ -1,5 +1,6 @@
 import json
 import gzip
+
 import pandas as pd
 import plotly.express as px
 
@@ -9,7 +10,7 @@ import plotly.express as px
 # https://api.census.gov/data/2019/acs/acs5/variables.html
 # https://www.joshuastevens.net/cartography/make-a-bivariate-choropleth-map/
 
-# B01003_001E TOTAL Population 
+# B02001_001E TOTAL Population 
 # B02008_001E WHITE ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
 # B02009_001E BLACK OR AFRICAN AMERICAN ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
 # B02010_001E AMERICAN INDIAN AND ALASKA NATIVE ALONE OR IN COMBINATION WITH ONE OR MORE OTHER RACES
@@ -56,6 +57,7 @@ df['class'] = df['tobacco_classification'].astype(str) + df['alcohol_classificat
 # Setup hover text
 df['Information'] = 'Tobacco Licenses: ' + df['tobacco'].astype(str) + '<br>' + \
     'Alcohol Licenses: ' + df['alcohol'].astype(str) + '<br>' + \
+    'Population: ' + df['B02001_001E'].astype(str) + '<br>' + \
     'Persons Below Poverty Line: ' + df['percentage'].astype(str) + '% <br>'
 
 fig = px.choropleth_mapbox(df, geojson=mapdata, locations='zip', 
